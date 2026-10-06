@@ -7,10 +7,11 @@ on:
     paths:
       - "package.json"
       - "electron/**"
+      - "build/**"
       - ".github/workflows/desktop-build.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   windows-installer:
@@ -34,16 +35,38 @@ jobs:
       - name: Collect installer
         shell: pwsh
         run: |
+          $version = node -p "require('./package.json').version"
           New-Item -ItemType Directory -Force -Path release-files | Out-Null
-          Get-ChildItem -Path dist -Filter "*.exe" | ForEach-Object {
-            Copy-Item $_.FullName -Destination release-files
-          }
+          $installer = Get-ChildItem -Path dist -Filter "*.exe" | Select-Object -First 1
+          if (-not $installer) { throw "Windows installer not found" }
+          $target = "release-files/PawBudget-Setup-v$version.exe"
+          Copy-Item $installer.FullName -Destination $target
+          Write-Host "Installer: $target"
           Get-ChildItem release-files
 
-      - name: Upload Windows installer
+      - name: Upload Windows installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PawBudget-Windows-v0.1.4
+          name: PawBudget-Windows
           path: release-files/*.exe
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish GitHub Release
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = node -p "require('./package.json').version"
+          $tag = "v$version"
+          $asset = "release-files/PawBudget-Setup-v$version.exe"
+          if (gh release view $tag --repo "${{ github.repository }}" 2>$null) {
+            gh release upload $tag $asset --clobber --repo "${{ github.repository }}"
+          } else {
+            gh release create $tag $asset `
+              --repo "${{ github.repository }}" `
+              --target "${{ github.sha }}" `
+              --title "PawBudget 毛球账本 v$version" `
+              --notes "Windows 安装版。双击 EXE 安装即可使用。数据与照片默认保存在本机。"
+          }
