@@ -64,3 +64,15 @@ main{padding:0 18px}.page{display:none;animation:fade .25s ease}.page.active{dis
 .secondary-action.compact.subtle{background:white;color:#7b8883}
 #reportAvatar.has-photo{width:138px;height:138px;border-radius:50%;bottom:8px}
 @media(max-width:390px){.avatar-editor{align-items:flex-start}.avatar-preview{width:74px;height:74px}}
+
+/* modal + shortcut exit hardening */
+.page-back{
+  border:0;background:#eef8f4;color:#246b5b;border-radius:999px;
+  padding:8px 12px;font-weight:900;font-size:12px;margin:6px 0 10px;cursor:pointer
+}
+.form-actions{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;margin-top:16px}
+.cancel-btn{
+  border:1px solid #dce6e1;background:#fff;color:#5b6965;border-radius:16px;
+  padding:13px 16px;font-weight:900
+}
+.modal[open]{overscroll-behavior:contain}

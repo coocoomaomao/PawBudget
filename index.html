@@ -76,18 +76,21 @@
       </section>
 
       <section class="page" data-page="records">
+        <button type="button" class="page-back" data-nav="home">← 首页</button>
         <div class="page-head"><div><h1>消费记录</h1><p>钱花哪儿了，一眼看清</p></div><button class="primary mini" id="addRecordBtn">＋ 记一笔</button></div>
         <div class="filter-row" id="recordFilters"></div>
         <div class="record-list" id="recordList"></div>
       </section>
 
       <section class="page" data-page="inventory">
+        <button type="button" class="page-back" data-nav="home">← 首页</button>
         <div class="page-head"><div><h1>库存提醒</h1><p>饭可以少吃一口，不能断粮</p></div><button class="primary mini" id="addInventoryBtn">＋ 添加</button></div>
         <div class="mascot-note slim card"><div class="pet-avatar mascot-card alert"></div><div><strong>饭！要！没！了！</strong><p>剩余不足 7 天会重点提醒</p></div></div>
         <div class="inventory-grid" id="inventoryList"></div>
       </section>
 
       <section class="page" data-page="wardrobe">
+        <button type="button" class="page-back" data-nav="home">← 首页</button>
         <div class="page-head"><div><h1 id="wardrobeHeading">墨团的衣橱</h1><p>贵不贵，看单次穿着成本</p></div><button class="primary mini" id="addWardrobeBtn">＋ 添加</button></div>
         <div class="wardrobe-summary card">
           <div><small>衣橱总投入</small><strong id="wardrobeTotal">¥0</strong></div>
@@ -98,6 +101,7 @@
       </section>
 
       <section class="page" data-page="report">
+        <button type="button" class="page-back" data-nav="home">← 首页</button>
         <div class="report-hero">
           <div class="report-topline">PawBudget · 毛球账本</div>
           <h1><span id="reportPetName">墨团</span>的 <span id="reportYear"></span> 年度账单</h1>
@@ -141,7 +145,7 @@
       <label>商品<input id="itemInput" type="text" placeholder="例如：万圣节斗篷" required /></label>
       <label>日期<input id="dateInput" type="date" required /></label>
       <label>备注<input id="noteInput" type="text" placeholder="例如：拍照超可爱" /></label>
-      <button class="primary full" id="expenseSubmitBtn" value="default" type="submit">保存记录</button>
+      <div class="form-actions"><button type="button" class="cancel-btn" data-close-dialog>取消</button><button class="primary" id="expenseSubmitBtn" value="default" type="submit">保存记录</button></div>
     </form>
   </dialog>
 
@@ -149,7 +153,7 @@
     <form method="dialog" id="simpleForm">
       <div class="modal-head"><div><h2 id="simpleTitle">添加</h2><p id="simpleSubtitle"></p></div><button type="button" class="close" data-close-dialog>×</button></div>
       <div id="simpleFields"></div>
-      <button class="primary full" value="default" type="submit">保存</button>
+      <div class="form-actions"><button type="button" class="cancel-btn" data-close-dialog>取消</button><button class="primary" value="default" type="submit">保存</button></div>
     </form>
   </dialog>
 
@@ -160,7 +164,7 @@
       <label>本次花费（可选）<input id="restockCostInput" type="number" min="0" step="0.01" placeholder="0" /></label>
       <label>日期<input id="restockDateInput" type="date" required /></label>
       <label>备注<input id="restockNoteInput" maxlength="80" placeholder="例如：双十一囤货" /></label>
-      <button class="primary full" value="default" type="submit">确认补货</button>
+      <div class="form-actions"><button type="button" class="cancel-btn" data-close-dialog>取消</button><button class="primary" value="default" type="submit">确认补货</button></div>
     </form>
   </dialog>
 
@@ -183,7 +187,7 @@
       <label>年龄<input id="petAgeInput" maxlength="20" placeholder="例如：3岁" /></label>
       <label>体重（kg）<input id="petWeightInput" type="number" min="0" step="0.1" placeholder="5.2" /></label>
       <label>一句话介绍<input id="petNoteInput" maxlength="60" placeholder="例如：有点胖，但很可爱！" /></label>
-      <button class="primary full" value="default" type="submit">保存档案</button>
+      <div class="form-actions"><button type="button" class="cancel-btn" data-close-dialog>取消</button><button class="primary" value="default" type="submit">保存档案</button></div>
     </form>
   </dialog>
 
@@ -191,7 +195,7 @@
     <div class="share-wrap">
       <div class="modal-head"><div><h2>年度账单分享图</h2><p>3:4 · 900 × 1200，可直接发小红书</p></div><button type="button" class="close" id="shareCloseBtn" data-close-dialog>×</button></div>
       <canvas id="shareCanvas" width="900" height="1200"></canvas>
-      <button class="primary full" id="downloadShareBtn" type="button">下载 PNG 分享图</button>
+      <div class="form-actions"><button type="button" class="cancel-btn" data-close-dialog>关闭</button><button class="primary" id="downloadShareBtn" type="button">下载 PNG 分享图</button></div>
     </div>
   </dialog>
 
