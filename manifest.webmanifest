@@ -1,0 +1,10 @@
+{
+  "name":"PawBudget 毛球账本",
+  "short_name":"PawBudget",
+  "start_url":"./",
+  "display":"standalone",
+  "background_color":"#fffaf1",
+  "theme_color":"#0e7c66",
+  "description":"记录宠物消费、库存提醒、宠物衣橱与年度账单。",
+  "icons":[]
+}
