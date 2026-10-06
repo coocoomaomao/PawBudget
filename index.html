@@ -135,7 +135,7 @@
 
   <dialog id="expenseDialog" class="modal">
     <form method="dialog" id="expenseForm">
-      <div class="modal-head"><div><h2 id="expenseModalTitle">记一笔消费</h2><p>买得开心，也要记得清楚～</p></div><button value="cancel" class="close">×</button></div>
+      <div class="modal-head"><div><h2 id="expenseModalTitle">记一笔消费</h2><p>买得开心，也要记得清楚～</p></div><button type="button" class="close" data-close-dialog>×</button></div>
       <div class="category-grid" id="categoryPicker"></div>
       <label>金额<input id="amountInput" type="number" min="0" step="0.01" placeholder="¥ 0.00" required /></label>
       <label>商品<input id="itemInput" type="text" placeholder="例如：万圣节斗篷" required /></label>
@@ -147,7 +147,7 @@
 
   <dialog id="simpleDialog" class="modal">
     <form method="dialog" id="simpleForm">
-      <div class="modal-head"><div><h2 id="simpleTitle">添加</h2><p id="simpleSubtitle"></p></div><button value="cancel" class="close">×</button></div>
+      <div class="modal-head"><div><h2 id="simpleTitle">添加</h2><p id="simpleSubtitle"></p></div><button type="button" class="close" data-close-dialog>×</button></div>
       <div id="simpleFields"></div>
       <button class="primary full" value="default" type="submit">保存</button>
     </form>
@@ -155,7 +155,7 @@
 
   <dialog id="restockDialog" class="modal">
     <form method="dialog" id="restockForm">
-      <div class="modal-head"><div><h2 id="restockTitle">库存补货</h2><p>补货后自动更新剩余量，也可以顺手记消费</p></div><button value="cancel" class="close">×</button></div>
+      <div class="modal-head"><div><h2 id="restockTitle">库存补货</h2><p>补货后自动更新剩余量，也可以顺手记消费</p></div><button type="button" class="close" data-close-dialog>×</button></div>
       <label>本次补货数量<input id="restockQuantityInput" type="number" min="0.01" step="0.01" required /></label>
       <label>本次花费（可选）<input id="restockCostInput" type="number" min="0" step="0.01" placeholder="0" /></label>
       <label>日期<input id="restockDateInput" type="date" required /></label>
@@ -166,7 +166,7 @@
 
   <dialog id="petDialog" class="modal">
     <form method="dialog" id="petForm">
-      <div class="modal-head"><div><h2>宠物档案</h2><p>把主子的基本信息和最可爱的照片留下来</p></div><button value="cancel" class="close">×</button></div>
+      <div class="modal-head"><div><h2>宠物档案</h2><p>把主子的基本信息和最可爱的照片留下来</p></div><button type="button" class="close" data-close-dialog>×</button></div>
       <div class="avatar-editor">
         <div class="pet-avatar avatar-preview mascot-card" id="avatarPreview"></div>
         <div class="avatar-editor-copy">
@@ -189,7 +189,7 @@
 
   <dialog id="shareDialog" class="modal share-modal">
     <div class="share-wrap">
-      <div class="modal-head"><div><h2>年度账单分享图</h2><p>3:4 · 900 × 1200，可直接发小红书</p></div><button class="close" id="shareCloseBtn">×</button></div>
+      <div class="modal-head"><div><h2>年度账单分享图</h2><p>3:4 · 900 × 1200，可直接发小红书</p></div><button type="button" class="close" id="shareCloseBtn" data-close-dialog>×</button></div>
       <canvas id="shareCanvas" width="900" height="1200"></canvas>
       <button class="primary full" id="downloadShareBtn" type="button">下载 PNG 分享图</button>
     </div>

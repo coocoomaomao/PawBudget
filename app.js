@@ -193,6 +193,12 @@ function nav(page){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 document.addEventListener('click',e=>{
+  const closeBtn=e.target.closest('[data-close-dialog]');
+  if(closeBtn){
+    const dialog=closeBtn.closest('dialog');
+    if(dialog?.open)dialog.close();
+    return;
+  }
   const n=e.target.closest('[data-nav]');if(n)nav(n.dataset.nav);
   const a=e.target.closest('[data-action="add"]');if(a)openExpense();
   const f=e.target.closest('[data-filter]');if(f){filter=f.dataset.filter;renderRecords()}
