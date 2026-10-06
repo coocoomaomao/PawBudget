@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#DFFFF0"/>
+      <stop offset="1" stop-color="#73E7B4"/>
+    </linearGradient>
+    <linearGradient id="coin" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFF29A"/>
+      <stop offset=".45" stop-color="#FFD54A"/>
+      <stop offset="1" stop-color="#F0A500"/>
+    </linearGradient>
+  </defs>
+  <rect x="70" y="70" width="884" height="884" rx="210" fill="url(#bg)"/>
+  <path d="M258 380 L315 226 Q330 190 360 220 L430 300 Q512 258 594 300 L665 220 Q694 190 710 226 L768 382 Q813 434 813 520 Q813 704 623 744 L401 744 Q211 704 211 520 Q211 435 258 380Z" fill="#171C1F"/>
+  <path d="M315 229 L338 347 L399 304Z" fill="#FFA18E"/>
+  <path d="M708 229 L685 347 L624 304Z" fill="#FFA18E"/>
+  <ellipse cx="408" cy="476" rx="64" ry="82" fill="#FFD63E"/>
+  <ellipse cx="616" cy="476" rx="64" ry="82" fill="#FFD63E"/>
+  <ellipse cx="415" cy="486" rx="34" ry="48" fill="#2B2114"/>
+  <ellipse cx="609" cy="486" rx="34" ry="48" fill="#2B2114"/>
+  <circle cx="430" cy="458" r="13" fill="#FFFFFF"/>
+  <circle cx="624" cy="458" r="13" fill="#FFFFFF"/>
+  <path d="M500 540 Q512 532 524 540 Q512 553 500 540Z" fill="#F5A68B"/>
+  <path d="M472 564 Q512 602 552 564" fill="none" stroke="#F6D5C9" stroke-width="16" stroke-linecap="round"/>
+  <path d="M343 580 Q294 566 260 548" stroke="#F6E5DA" stroke-width="14" stroke-linecap="round"/>
+  <path d="M343 612 Q294 612 252 622" stroke="#F6E5DA" stroke-width="14" stroke-linecap="round"/>
+  <path d="M681 580 Q730 566 764 548" stroke="#F6E5DA" stroke-width="14" stroke-linecap="round"/>
+  <path d="M681 612 Q730 612 772 622" stroke="#F6E5DA" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="676" cy="690" r="150" fill="url(#coin)" stroke="#F2B322" stroke-width="24"/>
+  <circle cx="676" cy="690" r="118" fill="none" stroke="#FFF1A0" stroke-width="12" opacity=".75"/>
+  <ellipse cx="676" cy="720" rx="58" ry="49" fill="#D88900"/>
+  <circle cx="619" cy="658" r="26" fill="#D88900"/>
+  <circle cx="655" cy="632" r="26" fill="#D88900"/>
+  <circle cx="697" cy="632" r="26" fill="#D88900"/>
+  <circle cx="734" cy="658" r="26" fill="#D88900"/>
+  <ellipse cx="375" cy="727" rx="92" ry="62" fill="#171C1F"/>
+  <ellipse cx="764" cy="638" rx="72" ry="88" transform="rotate(-18 764 638)" fill="#171C1F"/>
+</svg>
