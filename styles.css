@@ -35,3 +35,15 @@ main{padding:0 18px}.page{display:none;animation:fade .25s ease}.page.active{dis
 .share-wrap{padding:18px;overflow:auto;max-height:94dvh}
 #shareCanvas{display:block;width:100%;height:auto;border-radius:20px;margin-top:14px;background:#fffaf1;box-shadow:0 10px 30px rgba(22,65,54,.12)}
 .modal input[type="number"]{font-variant-numeric:tabular-nums}
+
+/* v0.1.2 history, backup and share polish */
+.inventory-actions,.wardrobe-actions{display:flex;gap:8px;margin-top:12px}
+.inline-action{flex:1;border:0;border-radius:12px;padding:9px 10px;background:#eef8f4;color:#246b5b;font-weight:900;font-size:12px}
+.inline-action.accent{background:#0f6f5d;color:#fff}
+.history-line{margin-top:9px;padding-top:9px;border-top:1px dashed #e4e9e5;color:#7a8581;font-size:11px}
+.wardrobe-item .inline-action{margin-top:10px;width:100%}
+.data-card{padding:18px;margin:14px 8px 24px}
+.data-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.secondary-action{border:1px solid #dce8e2;background:#f8fcfa;color:#235e52;border-radius:14px;padding:11px 12px;font-weight:900;font-size:12px}
+.secondary-action:last-child{grid-column:1/-1}
+.share-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}

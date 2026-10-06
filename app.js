@@ -32,16 +32,16 @@ const demoState={
     {id:8,amount:23.8,item:'鸡胸肉罐头',category:'food',date:iso(now),note:'今天加餐'}
   ],
   inventory:[
-    {id:1,name:'猫粮',totalQuantity:6000,remainQuantity:2405,dailyUsage:65,unit:'g'},
-    {id:2,name:'猫砂',totalQuantity:6000,remainQuantity:2700,dailyUsage:300,unit:'g'},
-    {id:3,name:'罐头',totalQuantity:12,remainQuantity:3,dailyUsage:1,unit:'罐'},
-    {id:4,name:'湿巾',totalQuantity:80,remainQuantity:24,dailyUsage:1,unit:'片'}
+    {id:1,name:'猫粮',totalQuantity:6000,remainQuantity:2405,dailyUsage:65,unit:'g',restocks:[{date:dateInMonth(2),quantity:6000,cost:369,note:'月初囤粮'}]},
+    {id:2,name:'猫砂',totalQuantity:6000,remainQuantity:2700,dailyUsage:300,unit:'g',restocks:[{date:dateInMonth(10),quantity:6000,cost:79,note:'豆腐猫砂'}]},
+    {id:3,name:'罐头',totalQuantity:12,remainQuantity:3,dailyUsage:1,unit:'罐',restocks:[{date:dateInMonth(8),quantity:12,cost:0,note:'家里原有库存'}]},
+    {id:4,name:'湿巾',totalQuantity:80,remainQuantity:24,dailyUsage:1,unit:'片',restocks:[]}
   ],
   wardrobe:[
-    {id:1,name:'小黄鸭雨衣',price:128,wears:6,emoji:'🐥'},
-    {id:2,name:'万圣节斗篷',price:199,wears:2,emoji:'🧙'},
-    {id:3,name:'圣诞围巾',price:89,wears:4,emoji:'🧣'},
-    {id:4,name:'薄荷绿小领结',price:59,wears:8,emoji:'🎀'}
+    {id:1,name:'小黄鸭雨衣',price:128,wears:6,emoji:'🐥',wearHistory:[{date:dateInMonth(3)},{date:dateInMonth(9)}]},
+    {id:2,name:'万圣节斗篷',price:199,wears:2,emoji:'🧙',wearHistory:[{date:dateInMonth(6)}]},
+    {id:3,name:'圣诞围巾',price:89,wears:4,emoji:'🧣',wearHistory:[]},
+    {id:4,name:'薄荷绿小领结',price:59,wears:8,emoji:'🎀',wearHistory:[{date:dateInMonth(12)}]}
   ]
 };
 
@@ -51,17 +51,23 @@ function normalizeState(raw){
   s.demo=Boolean(s.demo);
   s.pet={...(s.demo?DEMO_PET:REAL_PET),...(s.pet||{})};
   s.records=Array.isArray(s.records)?s.records:[];
-  s.wardrobe=Array.isArray(s.wardrobe)?s.wardrobe:[];
+  s.wardrobe=(Array.isArray(s.wardrobe)?s.wardrobe:[]).map(w=>({
+    ...w,
+    price:Number(w.price||0),
+    wears:Number(w.wears||0),
+    wearHistory:Array.isArray(w.wearHistory)?w.wearHistory:[]
+  }));
   s.inventory=(Array.isArray(s.inventory)?s.inventory:[]).map(i=>{
     if(i.remainQuantity==null && i.days!=null){
-      return {...i,totalQuantity:Number(i.total||30),remainQuantity:Number(i.days),dailyUsage:1,unit:i.unit||'天'};
+      return {...i,totalQuantity:Number(i.total||30),remainQuantity:Number(i.days),dailyUsage:1,unit:i.unit||'天',restocks:Array.isArray(i.restocks)?i.restocks:[]};
     }
     return {
       ...i,
       totalQuantity:Number(i.totalQuantity||0),
       remainQuantity:Number(i.remainQuantity||0),
       dailyUsage:Number(i.dailyUsage||0),
-      unit:i.unit||'份'
+      unit:i.unit||'份',
+      restocks:Array.isArray(i.restocks)?i.restocks:[]
     };
   });
   return s;
@@ -141,10 +147,13 @@ function renderInventory(){
   document.querySelector('#inventoryList').innerHTML=state.inventory.length?state.inventory.map(i=>{
     const days=inventoryDays(i),cls=days<=3?'danger':days<=10?'warn':'good';
     const pct=Number(i.totalQuantity)>0?Math.max(3,Math.min(100,Number(i.remainQuantity)/Number(i.totalQuantity)*100)):Math.max(3,Math.min(100,days/30*100));
+    const last=[...(i.restocks||[])].sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0];
     return `<article class="inventory-item">
       <div class="inventory-top"><div><div class="inventory-name">${esc(i.name)}</div><div class="inventory-quantity">剩余 ${esc(i.remainQuantity)} ${esc(i.unit)} · 日均 ${esc(i.dailyUsage)} ${esc(i.unit)}</div></div><span class="badge ${cls}">${days} 天</span></div>
       <div class="progress"><i style="width:${pct}%"></i></div>
       <div class="inventory-meta"><span>${days<=3?'需要补货了！':days<=10?'快到补货线':'库存充足'}</span><span>预计 ${days} 天后用完</span></div>
+      ${last?`<div class="history-line">最近补货：${esc(last.date)} · +${esc(last.quantity)} ${esc(i.unit)}${Number(last.cost)>0?` · ${money(last.cost)}`:''}</div>`:''}
+      <div class="inventory-actions"><button class="inline-action accent inventory-restock" data-id="${esc(i.id)}">＋ 补货</button></div>
     </article>`;
   }).join(''):'<div class="empty">库存空空的。<br>先把主子的口粮加进来吧。</div>';
 }
@@ -155,7 +164,10 @@ function renderWardrobe(){
   document.querySelector('#wardrobeTotal').textContent=money(total);
   document.querySelector('#wearCount').textContent=`${wears} 次`;
   document.querySelector('#highestWearCost').textContent=money(costs.length?Math.max(...costs):0);
-  document.querySelector('#wardrobeList').innerHTML=state.wardrobe.length?state.wardrobe.map(w=>`<article class="wardrobe-item"><div class="wardrobe-visual">${esc(w.emoji||'👕')}</div><div class="wardrobe-body"><strong>${esc(w.name)}</strong><small>入手 ${money(w.price)} · 穿 ${esc(w.wears)} 次</small><div class="wear-cost">单次穿着成本 ${money(Number(w.wears)>0?Number(w.price)/Number(w.wears):Number(w.price))}</div></div></article>`).join(''):'<div class="empty">衣橱还空着。<br>第一件穿搭会是什么？</div>';
+  document.querySelector('#wardrobeList').innerHTML=state.wardrobe.length?state.wardrobe.map(w=>{
+    const last=[...(w.wearHistory||[])].sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0];
+    return `<article class="wardrobe-item"><div class="wardrobe-visual">${esc(w.emoji||'👕')}</div><div class="wardrobe-body"><strong>${esc(w.name)}</strong><small>入手 ${money(w.price)} · 穿 ${esc(w.wears)} 次</small><div class="wear-cost">单次穿着成本 ${money(Number(w.wears)>0?Number(w.price)/Number(w.wears):Number(w.price))}</div>${last?`<div class="history-line">最近穿着：${esc(last.date)}</div>`:''}<button class="inline-action accent wardrobe-wear" data-id="${esc(w.id)}">✓ 今天穿了</button></div></article>`;
+  }).join(''):'<div class="empty">衣橱还空着。<br>第一件穿搭会是什么？</div>';
 }
 function renderReport(){
   const records=state.records.filter(r=>inYear(r.date)),total=sum(records),data=byCategory(records),max=Math.max(...Object.values(data),1);
@@ -176,6 +188,8 @@ document.addEventListener('click',e=>{
   const f=e.target.closest('[data-filter]');if(f){filter=f.dataset.filter;renderRecords()}
   const edit=e.target.closest('.record-edit');if(edit)openExpense(edit.dataset.id);
   const del=e.target.closest('.record-delete');if(del)deleteRecord(del.dataset.id);
+  const restock=e.target.closest('.inventory-restock');if(restock)openRestock(restock.dataset.id);
+  const wear=e.target.closest('.wardrobe-wear');if(wear)recordWear(wear.dataset.id);
 });
 
 const expenseDialog=document.querySelector('#expenseDialog');
@@ -254,12 +268,53 @@ document.querySelector('#addWardrobeBtn').addEventListener('click',()=>openSimpl
 document.querySelector('#simpleForm').addEventListener('submit',e=>{
   e.preventDefault();const fd=new FormData(e.target);
   if(simpleMode==='inventory'){
-    state.inventory.push({id:Date.now(),name:fd.get('name').trim(),totalQuantity:Number(fd.get('totalQuantity')),remainQuantity:Number(fd.get('remainQuantity')),dailyUsage:Number(fd.get('dailyUsage')),unit:fd.get('unit').trim()||'份'});
+    state.inventory.push({id:Date.now(),name:fd.get('name').trim(),totalQuantity:Number(fd.get('totalQuantity')),remainQuantity:Number(fd.get('remainQuantity')),dailyUsage:Number(fd.get('dailyUsage')),unit:fd.get('unit').trim()||'份',restocks:[]});
   }else{
-    state.wardrobe.push({id:Date.now(),name:fd.get('name').trim(),price:Number(fd.get('price')),wears:Number(fd.get('wears')),emoji:fd.get('emoji').trim()||'👕'});
+    state.wardrobe.push({id:Date.now(),name:fd.get('name').trim(),price:Number(fd.get('price')),wears:Number(fd.get('wears')),emoji:fd.get('emoji').trim()||'👕',wearHistory:[]});
   }
   save();render();simpleDialog.close();e.target.reset();toast('保存成功 ✨');
 });
+
+let restockInventoryId=null;
+const restockDialog=document.querySelector('#restockDialog');
+function openRestock(id){
+  const item=state.inventory.find(i=>String(i.id)===String(id));if(!item)return;
+  restockInventoryId=id;
+  document.querySelector('#restockTitle').textContent=`${item.name} · 补货`;
+  document.querySelector('#restockQuantityInput').value='';
+  document.querySelector('#restockCostInput').value='';
+  document.querySelector('#restockDateInput').value=iso(now);
+  document.querySelector('#restockNoteInput').value='';
+  restockDialog.showModal();
+}
+function inventoryExpenseCategory(name){
+  if(/粮|罐头|冻干|零食|肉|营养/.test(name))return 'food';
+  if(/驱虫|药|疫苗|保健/.test(name))return 'health';
+  return 'daily';
+}
+document.querySelector('#restockForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const item=state.inventory.find(i=>String(i.id)===String(restockInventoryId));if(!item)return;
+  const quantity=Number(document.querySelector('#restockQuantityInput').value);
+  const cost=Number(document.querySelector('#restockCostInput').value||0);
+  const date=document.querySelector('#restockDateInput').value;
+  const note=document.querySelector('#restockNoteInput').value.trim();
+  if(!quantity||quantity<=0)return;
+  item.remainQuantity=Number(item.remainQuantity||0)+quantity;
+  item.totalQuantity=Math.max(Number(item.totalQuantity||0),Number(item.remainQuantity||0));
+  item.restocks=Array.isArray(item.restocks)?item.restocks:[];
+  item.restocks.push({id:Date.now(),date,quantity,cost,note});
+  if(cost>0)state.records.push({id:Date.now()+1,amount:cost,item:`${item.name}补货`,category:inventoryExpenseCategory(item.name),date,note:note||'库存补货'});
+  save();render();restockDialog.close();toast(cost>0?'补货成功，花费也记到账本啦':'补货成功，库存已更新');
+});
+function recordWear(id){
+  const item=state.wardrobe.find(w=>String(w.id)===String(id));if(!item)return;
+  item.wearHistory=Array.isArray(item.wearHistory)?item.wearHistory:[];
+  if(item.wearHistory.some(x=>x.date===iso(now))){toast('今天已经记录过这套穿搭啦 👕');return;}
+  item.wearHistory.push({id:Date.now(),date:iso(now)});
+  item.wears=Number(item.wears||0)+1;
+  save();render();toast(`${item.name} +1 次穿着，越来越值啦 ✨`);
+}
 
 function setDemoMode(){
   if(state.demo){
@@ -292,34 +347,60 @@ function drawCat(ctx,cx,cy,scale=1){
 function generateSharePoster(){
   const canvas=document.querySelector('#shareCanvas'),ctx=canvas.getContext('2d'),W=900,H=1200;
   const p=state.pet,records=state.records.filter(r=>inYear(r.date)),total=sum(records),data=byCategory(records);
-  ctx.clearRect(0,0,W,H);ctx.fillStyle='#fffaf1';ctx.fillRect(0,0,W,H);
+  const sorted=CATEGORIES.filter(catItem=>data[catItem.id]>0).sort((a,b)=>data[b.id]-data[a.id]).slice(0,5);
+  const top=sorted[0];
+  const wardrobeCosts=state.wardrobe.map(w=>({name:w.name,cost:Number(w.wears)>0?Number(w.price)/Number(w.wears):Number(w.price)})).sort((a,b)=>b.cost-a.cost);
+  const expensiveWear=wardrobeCosts[0];
+  const tight=[...state.inventory].sort((a,b)=>inventoryDays(a)-inventoryDays(b))[0];
 
-  ctx.fillStyle='#0f6f5d';ctx.font='900 52px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText('PawBudget',60,78);
-  ctx.fillStyle='#12312e';ctx.font='800 28px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText('毛球账本 · 年度消费报告',62,118);
+  ctx.clearRect(0,0,W,H);
+  const grad=ctx.createLinearGradient(0,0,W,H);grad.addColorStop(0,'#fffaf1');grad.addColorStop(.55,'#f0fbf6');grad.addColorStop(1,'#ffe9e4');ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
 
-  rounded(ctx,48,160,804,270,38,'#dff7ef');
-  ctx.fillStyle='#12312e';ctx.font='900 48px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText(`${p.name||'主子'}的 ${y} 年度账单`,78,230);
-  ctx.fillStyle='#60736d';ctx.font='500 24px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText('这一年，谢谢你把最好的都给我 ♡',80,276);
-  drawCat(ctx,725,320,.78);
+  ctx.globalAlpha=.35;ctx.fillStyle='#91d8c2';ctx.beginPath();ctx.arc(840,80,120,0,Math.PI*2);ctx.fill();ctx.fillStyle='#f4b8bd';ctx.beginPath();ctx.arc(80,1130,95,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
 
-  rounded(ctx,48,458,804,180,30,'#ffffff');
-  ctx.fillStyle='#6b7874';ctx.font='600 22px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText('年度总消费',92,510);ctx.fillText('平均每天',500,510);
-  ctx.fillStyle='#12312e';ctx.font='900 48px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText(money(total),92,575);ctx.fillText(money(total/daysElapsedInYear()),500,575);
+  ctx.fillStyle='#0f6f5d';ctx.font='900 52px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText('PawBudget',58,72);
+  ctx.fillStyle='#71817b';ctx.font='700 18px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText('MEOWBUILD LAB · 007',60,105);
 
-  ctx.fillStyle='#12312e';ctx.font='900 30px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText('消费分类',62,700);
-  const sorted=CATEGORIES.filter(c=>data[c.id]>0).sort((a,b)=>data[b.id]-data[a.id]).slice(0,6);
-  const max=Math.max(...sorted.map(c=>data[c.id]),1);
-  sorted.forEach((c,idx)=>{
-    const yy=750+idx*62;
-    ctx.fillStyle='#2f4a44';ctx.font='700 20px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText(c.name,70,yy);
-    rounded(ctx,190,yy-20,430,18,9,'#edf1ee');
-    rounded(ctx,190,yy-20,Math.max(18,430*data[c.id]/max),18,9,c.color);
-    ctx.fillStyle='#12312e';ctx.font='800 20px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='right';ctx.fillText(money(data[c.id]),820,yy);ctx.textAlign='left';
+  rounded(ctx,48,142,804,255,40,'#dff7ef');
+  ctx.fillStyle='#12312e';ctx.font='900 45px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText(`${p.name||'主子'}的 ${y} 年度账单`,78,215);
+  ctx.fillStyle='#5f746c';ctx.font='500 23px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText('这一年，谢谢你把最好的都给我 ♡',80,255);
+  ctx.fillStyle='#0f6f5d';ctx.font='900 30px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText('养我很贵，但值得。',80,320);
+  drawCat(ctx,735,300,.72);
+
+  const kpis=[
+    ['年度总消费',money(total)],
+    ['平均每天',money(total/daysElapsedInYear())],
+    ['消费记录',`${records.length} 笔`]
+  ];
+  kpis.forEach((item,idx)=>{
+    const x=48+idx*268;rounded(ctx,x,425,244,128,28,'#ffffff');
+    ctx.fillStyle='#71817b';ctx.font='600 18px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText(item[0],x+24,466);
+    ctx.fillStyle='#12312e';ctx.font='900 31px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText(item[1],x+24,515);
   });
 
-  rounded(ctx,60,1080,780,78,24,'#12312e');
-  ctx.fillStyle='#fff';ctx.font='900 27px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';ctx.fillText('养我很贵，但值得。',450,1128);
-  ctx.fillStyle='#c9e9df';ctx.font='500 17px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText('帮你算清楚，不替你花钱。 · MeowBuild Lab',450,1152);ctx.textAlign='left';
+  ctx.fillStyle='#12312e';ctx.font='900 28px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText('这一年，钱都花去哪儿了？',58,615);
+  const max=Math.max(...sorted.map(item=>data[item.id]),1);
+  sorted.forEach((item,idx)=>{
+    const yy=664+idx*54;
+    ctx.fillStyle='#314e47';ctx.font='700 18px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText(item.name,66,yy);
+    rounded(ctx,168,yy-17,450,16,8,'#e8eeea');
+    rounded(ctx,168,yy-17,Math.max(16,450*data[item.id]/max),16,8,item.color);
+    ctx.fillStyle='#12312e';ctx.font='800 18px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='right';ctx.fillText(money(data[item.id]),824,yy);ctx.textAlign='left';
+  });
+
+  rounded(ctx,48,950,804,132,30,'#ffffff');
+  const insights=[
+    top?`最费钱：${top.name} ${money(data[top.id])}`:'今年还没怎么花钱',
+    expensiveWear?`最贵单次穿搭：${expensiveWear.name} ${money(expensiveWear.cost)}/次`:'衣橱还没开始记录',
+    tight?`最该补货：${tight.name} 约剩 ${inventoryDays(tight)} 天`:'库存还没开始记录'
+  ];
+  ctx.fillStyle='#0f6f5d';ctx.font='900 20px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText('年度小结',72,985);
+  ctx.fillStyle='#526861';ctx.font='600 18px "PingFang SC","Microsoft YaHei",sans-serif';
+  insights.forEach((line,idx)=>ctx.fillText('• '+line,72,1020+idx*27));
+
+  rounded(ctx,60,1110,780,58,22,'#12312e');
+  ctx.fillStyle='#fff';ctx.font='900 22px "PingFang SC","Microsoft YaHei",sans-serif';ctx.textAlign='center';ctx.fillText('你买你的，我玩纸箱。',450,1146);
+  ctx.fillStyle='#617770';ctx.font='600 14px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText('PawBudget 毛球账本 · 帮你算清楚，不替你花钱',450,1190);ctx.textAlign='left';
   return canvas;
 }
 const shareDialog=document.querySelector('#shareDialog');
@@ -334,6 +415,35 @@ document.querySelector('#downloadShareBtn').addEventListener('click',()=>{
     setTimeout(()=>URL.revokeObjectURL(url),1200);toast('分享图已经生成 📸');
   },'image/png');
 });
+
+function downloadBlob(content,type,filename){
+  const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1200);
+}
+function exportBackup(){
+  const payload={app:'PawBudget',version:'0.1.2',exportedAt:new Date().toISOString(),data:{...state,demo:false}};
+  downloadBlob(JSON.stringify(payload,null,2),'application/json;charset=utf-8',`PawBudget-${state.pet.name||'pet'}-${iso(now)}.json`);
+  toast('完整账本备份已导出');
+}
+function csvCell(value){return '"'+String(value??'').replace(/"/g,'""')+'"'}
+function exportCsv(){
+  const rows=[['日期','分类','商品','金额','备注'],...state.records.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(r=>[r.date,cat(r.category).name,r.item,r.amount,r.note||''])];
+  const csv='\uFEFF'+rows.map(row=>row.map(csvCell).join(',')).join('\n');
+  downloadBlob(csv,'text/csv;charset=utf-8',`PawBudget-消费记录-${iso(now)}.csv`);
+  toast('消费 CSV 已导出');
+}
+async function importBackup(file){
+  try{
+    const payload=JSON.parse(await file.text()),candidate=payload.data||payload;
+    if(!candidate||typeof candidate!=='object'||!Array.isArray(candidate.records)||!Array.isArray(candidate.inventory)||!Array.isArray(candidate.wardrobe))throw new Error('invalid');
+    if(!confirm('导入会覆盖当前真实账本。确定继续吗？'))return;
+    state=normalizeState({...candidate,demo:false});localStorage.setItem(REAL_BACKUP_KEY,JSON.stringify(state));save();render();toast('账本导入成功');
+  }catch{alert('这个文件不是有效的 PawBudget 备份。');}
+}
+document.querySelector('#exportDataBtn').addEventListener('click',exportBackup);
+document.querySelector('#exportCsvBtn').addEventListener('click',exportCsv);
+document.querySelector('#importDataBtn').addEventListener('click',()=>document.querySelector('#importFileInput').click());
+document.querySelector('#importFileInput').addEventListener('change',e=>{const file=e.target.files?.[0];if(file)importBackup(file);e.target.value='';});
 
 if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(()=>{})}
 render();
