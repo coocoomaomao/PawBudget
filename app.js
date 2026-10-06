@@ -51,12 +51,16 @@ function normalizeState(raw){
   s.demo=Boolean(s.demo);
   s.pet={...(s.demo?DEMO_PET:REAL_PET),...(s.pet||{})};
   s.pet.avatarDataUrl=typeof s.pet.avatarDataUrl==='string'?s.pet.avatarDataUrl:'';
-  s.records=Array.isArray(s.records)?s.records:[];
+  s.records=(Array.isArray(s.records)?s.records:[]).map(r=>({
+    ...r,
+    imageKey:typeof r.imageKey==='string'?r.imageKey:''
+  }));
   s.wardrobe=(Array.isArray(s.wardrobe)?s.wardrobe:[]).map(w=>({
     ...w,
     price:Number(w.price||0),
     wears:Number(w.wears||0),
-    wearHistory:Array.isArray(w.wearHistory)?w.wearHistory:[]
+    wearHistory:Array.isArray(w.wearHistory)?w.wearHistory:[],
+    imageKey:typeof w.imageKey==='string'?w.imageKey:''
   }));
   s.inventory=(Array.isArray(s.inventory)?s.inventory:[]).map(i=>{
     if(i.remainQuantity==null && i.days!=null){
@@ -68,7 +72,8 @@ function normalizeState(raw){
       remainQuantity:Number(i.remainQuantity||0),
       dailyUsage:Number(i.dailyUsage||0),
       unit:i.unit||'份',
-      restocks:Array.isArray(i.restocks)?i.restocks:[]
+      restocks:Array.isArray(i.restocks)?i.restocks:[],
+      imageKey:typeof i.imageKey==='string'?i.imageKey:''
     };
   });
   return s;
@@ -90,12 +95,152 @@ function inventoryDays(i){return Number(i.dailyUsage)>0?Math.max(0,Math.ceil(Num
 function toast(msg){const el=document.querySelector('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1800)}
 function daysElapsedInYear(){return Math.max(1,Math.floor((now-new Date(y,0,1))/86400000)+1)}
 
+const PHOTO_DB_NAME='pawbudget-media-v1';
+const PHOTO_STORE='itemPhotos';
+let photoDbPromise=null;
+const photoUrlCache=new Map();
+const photoDrafts={
+  expense:{existingKey:'',blob:null,remove:false,previewUrl:''},
+  simple:{existingKey:'',blob:null,remove:false,previewUrl:''}
+};
+function openPhotoDb(){
+  if(photoDbPromise)return photoDbPromise;
+  photoDbPromise=new Promise((resolve,reject)=>{
+    if(!('indexedDB' in window)){reject(new Error('indexeddb-unavailable'));return;}
+    const request=indexedDB.open(PHOTO_DB_NAME,1);
+    request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains(PHOTO_STORE))db.createObjectStore(PHOTO_STORE);};
+    request.onsuccess=()=>resolve(request.result);
+    request.onerror=()=>reject(request.error||new Error('indexeddb-open-failed'));
+  });
+  return photoDbPromise;
+}
+async function withPhotoStore(mode,action){
+  const db=await openPhotoDb();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(PHOTO_STORE,mode),store=tx.objectStore(PHOTO_STORE);
+    let result;
+    try{result=action(store);}catch(err){reject(err);return;}
+    tx.oncomplete=()=>resolve(result?.result);
+    tx.onerror=()=>reject(tx.error||new Error('indexeddb-transaction-failed'));
+    tx.onabort=()=>reject(tx.error||new Error('indexeddb-transaction-aborted'));
+  });
+}
+function makePhotoKey(){return 'item-'+Date.now()+'-'+Math.random().toString(36).slice(2,9)}
+async function putPhotoBlob(key,blob){await withPhotoStore('readwrite',store=>store.put(blob,key));}
+async function getPhotoBlob(key){if(!key)return null;return await withPhotoStore('readonly',store=>store.get(key))||null;}
+async function deletePhotoBlob(key){
+  if(!key)return;
+  const url=photoUrlCache.get(key);if(url){URL.revokeObjectURL(url);photoUrlCache.delete(key);}
+  await withPhotoStore('readwrite',store=>store.delete(key));
+}
+async function clearPhotoStore(){
+  photoUrlCache.forEach(url=>URL.revokeObjectURL(url));photoUrlCache.clear();
+  await withPhotoStore('readwrite',store=>store.clear());
+}
+async function getPhotoUrl(key){
+  if(!key)return '';
+  if(photoUrlCache.has(key))return photoUrlCache.get(key);
+  const blob=await getPhotoBlob(key);if(!blob)return '';
+  const url=URL.createObjectURL(blob);photoUrlCache.set(key,url);return url;
+}
+async function hydrateItemPhotos(){
+  const nodes=[...document.querySelectorAll('[data-photo-key]')];
+  await Promise.all(nodes.map(async node=>{
+    const key=node.dataset.photoKey;if(!key)return;
+    try{
+      const url=await getPhotoUrl(key);
+      if(url&&node.isConnected){node.src=url;node.classList.remove('photo-skeleton');}
+    }catch{}
+  }));
+}
+function compressItemPhoto(file){
+  return new Promise((resolve,reject)=>{
+    if(!file||!file.type.startsWith('image/')){reject(new Error('not-image'));return;}
+    if(file.size>25*1024*1024){reject(new Error('too-large'));return;}
+    const reader=new FileReader();
+    reader.onerror=()=>reject(new Error('read-failed'));
+    reader.onload=()=>{
+      const img=new Image();
+      img.onerror=()=>reject(new Error('decode-failed'));
+      img.onload=()=>{
+        const maxSide=900,scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));
+        const width=Math.max(1,Math.round(img.naturalWidth*scale)),height=Math.max(1,Math.round(img.naturalHeight*scale));
+        const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+        canvas.getContext('2d').drawImage(img,0,0,width,height);
+        canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('compress-failed')),'image/jpeg',.8);
+      };
+      img.src=reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function setItemPhotoPreview(prefix,url=''){
+  const el=document.querySelector('#'+prefix+'PhotoPreview');if(!el)return;
+  el.classList.toggle('has-photo',Boolean(url));
+  el.innerHTML=url?`<img src="${url}" alt="物品照片预览">`:'<span>📷</span>';
+}
+function cleanupPhotoDraft(kind){
+  const draft=photoDrafts[kind];if(!draft)return;
+  if(draft.previewUrl){URL.revokeObjectURL(draft.previewUrl);}
+  draft.existingKey='';draft.blob=null;draft.remove=false;draft.previewUrl='';
+}
+async function preparePhotoDraft(kind,prefix,existingKey=''){
+  cleanupPhotoDraft(kind);
+  const draft=photoDrafts[kind];draft.existingKey=existingKey||'';
+  setItemPhotoPreview(prefix,'');
+  if(existingKey){
+    try{const url=await getPhotoUrl(existingKey);if(draft.existingKey===existingKey)setItemPhotoPreview(prefix,url);}catch{}
+  }
+}
+function setupItemPhotoPicker(kind,prefix){
+  document.querySelector('#'+prefix+'ChoosePhotoBtn').addEventListener('click',()=>document.querySelector('#'+prefix+'PhotoInput').click());
+  document.querySelector('#'+prefix+'RemovePhotoBtn').addEventListener('click',()=>{
+    const draft=photoDrafts[kind];
+    if(draft.previewUrl){URL.revokeObjectURL(draft.previewUrl);draft.previewUrl='';}
+    draft.blob=null;draft.remove=true;setItemPhotoPreview(prefix,'');
+  });
+  document.querySelector('#'+prefix+'PhotoInput').addEventListener('change',async event=>{
+    const file=event.target.files?.[0];event.target.value='';if(!file)return;
+    try{
+      toast('正在压缩物品照片…');
+      const blob=await compressItemPhoto(file),draft=photoDrafts[kind];
+      if(draft.previewUrl)URL.revokeObjectURL(draft.previewUrl);
+      draft.blob=blob;draft.remove=false;draft.previewUrl=URL.createObjectURL(blob);
+      setItemPhotoPreview(prefix,draft.previewUrl);
+    }catch(err){
+      alert(err.message==='too-large'?'图片太大啦，请选择 25MB 以内的照片。':'这张图片暂时无法读取，请换一张 JPG / PNG / WebP。');
+    }
+  });
+}
+async function commitPhotoDraft(kind){
+  const draft=photoDrafts[kind];let key=draft.existingKey||'';
+  if(draft.blob){
+    const newKey=makePhotoKey();await putPhotoBlob(newKey,draft.blob);
+    if(key&&key!==newKey)await deletePhotoBlob(key);
+    key=newKey;
+  }else if(draft.remove&&key){
+    await deletePhotoBlob(key);key='';
+  }
+  cleanupPhotoDraft(kind);return key;
+}
+function referencedPhotoKeys(){
+  return new Set([
+    ...state.records.map(x=>x.imageKey),
+    ...state.inventory.map(x=>x.imageKey),
+    ...state.wardrobe.map(x=>x.imageKey)
+  ].filter(Boolean));
+}
+function blobToDataUrl(blob){
+  return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
+}
+async function dataUrlToBlob(dataUrl){return await (await fetch(dataUrl)).blob();}
+
 let state=load();
 let selectedCategory='food';
 let filter='all';
 let editingRecordId=null;
 
-function render(){renderPet();renderHome();renderRecords();renderInventory();renderWardrobe();renderReport()}
+function render(){renderPet();renderHome();renderRecords();renderInventory();renderWardrobe();renderReport();hydrateItemPhotos()}
 function applyAvatar(element,dataUrl){
   if(!element)return;
   const hasPhoto=Boolean(dataUrl);
@@ -146,8 +291,9 @@ function renderRecords(){
   const records=[...state.records].sort((a,b)=>String(b.date).localeCompare(String(a.date))).filter(r=>filter==='all'||r.category===filter);
   document.querySelector('#recordList').innerHTML=records.length?records.map(r=>{
     const c=cat(r.category);
+    const visual=r.imageKey?`<img class="record-photo photo-skeleton" data-photo-key="${esc(r.imageKey)}" alt="${esc(r.item)}">`:`<div class="record-cat" style="background:${c.color}22">${c.icon}</div>`;
     return `<article class="record-item">
-      <div class="record-cat" style="background:${c.color}22">${c.icon}</div>
+      ${visual}
       <div><div class="record-title">${esc(r.item)}</div><div class="record-meta">${c.name} · ${esc(r.date)}${r.note?` · ${esc(r.note)}`:''}</div></div>
       <div class="record-side"><div class="record-amount">${money(r.amount)}</div><div class="record-actions"><button class="tiny-action record-edit" data-id="${esc(r.id)}">编辑</button><button class="tiny-action danger record-delete" data-id="${esc(r.id)}">删除</button></div></div>
     </article>`;
@@ -158,8 +304,9 @@ function renderInventory(){
     const days=inventoryDays(i),cls=days<=3?'danger':days<=10?'warn':'good';
     const pct=Number(i.totalQuantity)>0?Math.max(3,Math.min(100,Number(i.remainQuantity)/Number(i.totalQuantity)*100)):Math.max(3,Math.min(100,days/30*100));
     const last=[...(i.restocks||[])].sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0];
+    const photo=i.imageKey?`<img class="inventory-photo photo-skeleton" data-photo-key="${esc(i.imageKey)}" alt="${esc(i.name)}">`:'';
     return `<article class="inventory-item">
-      <div class="inventory-top"><div><div class="inventory-name">${esc(i.name)}</div><div class="inventory-quantity">剩余 ${esc(i.remainQuantity)} ${esc(i.unit)} · 日均 ${esc(i.dailyUsage)} ${esc(i.unit)}</div></div><span class="badge ${cls}">${days} 天</span></div>
+      <div class="inventory-top"><div class="inventory-leading">${photo}<div><div class="inventory-name">${esc(i.name)}</div><div class="inventory-quantity">剩余 ${esc(i.remainQuantity)} ${esc(i.unit)} · 日均 ${esc(i.dailyUsage)} ${esc(i.unit)}</div></div></div><span class="badge ${cls}">${days} 天</span></div>
       <div class="progress"><i style="width:${pct}%"></i></div>
       <div class="inventory-meta"><span>${days<=3?'需要补货了！':days<=10?'快到补货线':'库存充足'}</span><span>预计 ${days} 天后用完</span></div>
       ${last?`<div class="history-line">最近补货：${esc(last.date)} · +${esc(last.quantity)} ${esc(i.unit)}${Number(last.cost)>0?` · ${money(last.cost)}`:''}</div>`:''}
@@ -176,7 +323,8 @@ function renderWardrobe(){
   document.querySelector('#highestWearCost').textContent=money(costs.length?Math.max(...costs):0);
   document.querySelector('#wardrobeList').innerHTML=state.wardrobe.length?state.wardrobe.map(w=>{
     const last=[...(w.wearHistory||[])].sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0];
-    return `<article class="wardrobe-item"><div class="wardrobe-visual">${esc(w.emoji||'👕')}</div><div class="wardrobe-body"><strong>${esc(w.name)}</strong><small>入手 ${money(w.price)} · 穿 ${esc(w.wears)} 次</small><div class="wear-cost">单次穿着成本 ${money(Number(w.wears)>0?Number(w.price)/Number(w.wears):Number(w.price))}</div>${last?`<div class="history-line">最近穿着：${esc(last.date)}</div>`:''}<button class="inline-action accent wardrobe-wear" data-id="${esc(w.id)}">✓ 今天穿了</button></div></article>`;
+    const visual=w.imageKey?`<div class="wardrobe-visual has-photo"><img class="photo-skeleton" data-photo-key="${esc(w.imageKey)}" alt="${esc(w.name)}"></div>`:`<div class="wardrobe-visual">${esc(w.emoji||'👕')}</div>`;
+    return `<article class="wardrobe-item">${visual}<div class="wardrobe-body"><strong>${esc(w.name)}</strong><small>入手 ${money(w.price)} · 穿 ${esc(w.wears)} 次</small><div class="wear-cost">单次穿着成本 ${money(Number(w.wears)>0?Number(w.price)/Number(w.wears):Number(w.price))}</div>${last?`<div class="history-line">最近穿着：${esc(last.date)}</div>`:''}<button class="inline-action accent wardrobe-wear" data-id="${esc(w.id)}">✓ 今天穿了</button></div></article>`;
   }).join(''):'<div class="empty">衣橱还空着。<br>第一件穿搭会是什么？</div>';
 }
 function renderReport(){
