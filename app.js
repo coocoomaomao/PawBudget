@@ -42,7 +42,7 @@ let state=load();
 let selectedCategory='food';
 let filter='all';
 
-function load(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||structuredClone(demoState)}catch{return structuredClone(demoState)}}
+function load(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||emptyState()}catch{return emptyState()}}
 function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
 function money(n){return `¥${Number(n||0).toLocaleString('zh-CN',{maximumFractionDigits:2})}`}
 function cat(id){return CATEGORIES.find(c=>c.id===id)||CATEGORIES[6]}
