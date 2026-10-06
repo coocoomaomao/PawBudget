@@ -239,6 +239,8 @@ let state=load();
 let selectedCategory='food';
 let filter='all';
 let editingRecordId=null;
+setupItemPhotoPicker('expense','expense');
+setupItemPhotoPicker('simple','simple');
 
 function render(){renderPet();renderHome();renderRecords();renderInventory();renderWardrobe();renderReport();hydrateItemPhotos()}
 function applyAvatar(element,dataUrl){
@@ -343,10 +345,13 @@ function nav(page){
 function closeDialog(dialog){
   if(!dialog?.open)return;
   dialog.close();
-  if(dialog.id==='expenseDialog')editingRecordId=null;
+  if(dialog.id==='expenseDialog'){
+    editingRecordId=null;cleanupPhotoDraft('expense');setItemPhotoPreview('expense','');
+  }
   if(dialog.id==='simpleDialog'){
     const form=document.querySelector('#simpleForm');
     if(form)form.reset();
+    cleanupPhotoDraft('simple');setItemPhotoPreview('simple','');
   }
   if(dialog.id==='restockDialog')restockInventoryId=null;
 }
@@ -388,28 +393,36 @@ function openExpense(recordId=null){
   document.querySelector('#noteInput').value=record?.note??'';
   document.querySelector('#dateInput').value=record?.date||iso(now);
   renderCategoryPicker();
+  preparePhotoDraft('expense','expense',record?.imageKey||'');
   expenseDialog.showModal();
 }
 function renderCategoryPicker(){
   document.querySelector('#categoryPicker').innerHTML=CATEGORIES.map(c=>`<button type="button" class="category-option ${selectedCategory===c.id?'active':''}" data-cat="${c.id}">${c.icon}<br>${c.name}</button>`).join('');
 }
 document.querySelector('#categoryPicker').addEventListener('click',e=>{const b=e.target.closest('[data-cat]');if(b){selectedCategory=b.dataset.cat;renderCategoryPicker()}});
-document.querySelector('#expenseForm').addEventListener('submit',e=>{
+document.querySelector('#expenseForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const amount=Number(document.querySelector('#amountInput').value),item=document.querySelector('#itemInput').value.trim();
   if(!amount||!item)return;
-  const payload={amount,item,category:selectedCategory,date:document.querySelector('#dateInput').value,note:document.querySelector('#noteInput').value.trim()};
-  if(editingRecordId!=null){
-    const idx=state.records.findIndex(r=>String(r.id)===String(editingRecordId));
-    if(idx>=0)state.records[idx]={...state.records[idx],...payload};
-  }else state.records.push({id:Date.now(),...payload});
-  save();render();expenseDialog.close();toast(editingRecordId!=null?'修改好啦 ✨':'记好啦，本猫知道你又花钱了 😼');editingRecordId=null;
+  try{
+    const imageKey=await commitPhotoDraft('expense');
+    const payload={amount,item,category:selectedCategory,date:document.querySelector('#dateInput').value,note:document.querySelector('#noteInput').value.trim(),imageKey};
+    if(editingRecordId!=null){
+      const idx=state.records.findIndex(r=>String(r.id)===String(editingRecordId));
+      if(idx>=0)state.records[idx]={...state.records[idx],...payload};
+    }else state.records.push({id:Date.now(),...payload});
+    save();render();expenseDialog.close();toast(editingRecordId!=null?'修改好啦 ✨':'记好啦，本猫知道你又花钱了 😼');editingRecordId=null;
+  }catch{
+    alert('图片暂时保存失败，请稍后再试，或不上传图片继续记录。');
+  }
 });
-function deleteRecord(id){
+async function deleteRecord(id){
   const record=state.records.find(r=>String(r.id)===String(id));
   if(!record)return;
   if(!confirm(`确定删除“${record.item}”这笔消费吗？`))return;
-  state.records=state.records.filter(r=>String(r.id)!==String(id));save();render();toast('这笔记录已经删除');
+  state.records=state.records.filter(r=>String(r.id)!==String(id));save();
+  if(record.imageKey&&!referencedPhotoKeys().has(record.imageKey)){try{await deletePhotoBlob(record.imageKey);}catch{}}
+  render();toast('这笔记录已经删除');
 }
 ['#quickAddBtn','#addRecordBtn'].forEach(s=>document.querySelector(s).addEventListener('click',()=>openExpense()));
 
@@ -488,6 +501,7 @@ document.querySelector('#petForm').addEventListener('submit',e=>{
 const simpleDialog=document.querySelector('#simpleDialog');let simpleMode='';
 function openSimple(mode){
   simpleMode=mode;const fields=document.querySelector('#simpleFields');
+  preparePhotoDraft('simple','simple','');
   if(mode==='inventory'){
     document.querySelector('#simpleTitle').textContent='添加库存';
     document.querySelector('#simpleSubtitle').textContent='填剩余量和日均消耗，自动算还能用几天';
@@ -501,14 +515,19 @@ function openSimple(mode){
 }
 document.querySelector('#addInventoryBtn').addEventListener('click',()=>openSimple('inventory'));
 document.querySelector('#addWardrobeBtn').addEventListener('click',()=>openSimple('wardrobe'));
-document.querySelector('#simpleForm').addEventListener('submit',e=>{
+document.querySelector('#simpleForm').addEventListener('submit',async e=>{
   e.preventDefault();const fd=new FormData(e.target);
-  if(simpleMode==='inventory'){
-    state.inventory.push({id:Date.now(),name:fd.get('name').trim(),totalQuantity:Number(fd.get('totalQuantity')),remainQuantity:Number(fd.get('remainQuantity')),dailyUsage:Number(fd.get('dailyUsage')),unit:fd.get('unit').trim()||'份',restocks:[]});
-  }else{
-    state.wardrobe.push({id:Date.now(),name:fd.get('name').trim(),price:Number(fd.get('price')),wears:Number(fd.get('wears')),emoji:fd.get('emoji').trim()||'👕',wearHistory:[]});
+  try{
+    const imageKey=await commitPhotoDraft('simple');
+    if(simpleMode==='inventory'){
+      state.inventory.push({id:Date.now(),name:fd.get('name').trim(),totalQuantity:Number(fd.get('totalQuantity')),remainQuantity:Number(fd.get('remainQuantity')),dailyUsage:Number(fd.get('dailyUsage')),unit:fd.get('unit').trim()||'份',restocks:[],imageKey});
+    }else{
+      state.wardrobe.push({id:Date.now(),name:fd.get('name').trim(),price:Number(fd.get('price')),wears:Number(fd.get('wears')),emoji:fd.get('emoji').trim()||'👕',wearHistory:[],imageKey});
+    }
+    save();render();simpleDialog.close();e.target.reset();toast('保存成功 ✨');
+  }catch{
+    alert('图片暂时保存失败，请稍后再试，或不上传图片继续添加。');
   }
-  save();render();simpleDialog.close();e.target.reset();toast('保存成功 ✨');
 });
 
 let restockInventoryId=null;
