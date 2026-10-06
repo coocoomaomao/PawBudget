@@ -15,8 +15,8 @@ const y=now.getFullYear(), m=now.getMonth();
 const iso=d=>new Date(d).toISOString().slice(0,10);
 const dateInMonth=day=>iso(new Date(y,m,Math.min(day,new Date(y,m+1,0).getDate()),12));
 const clone=value=>JSON.parse(JSON.stringify(value));
-const REAL_PET={name:'主子',age:'',weight:'',note:'点这里完善宠物档案'};
-const DEMO_PET={name:'墨团',age:'3岁',weight:5.2,note:'有点胖，但很可爱！'};
+const REAL_PET={name:'主子',age:'',weight:'',note:'点这里完善宠物档案',avatarDataUrl:''};
+const DEMO_PET={name:'墨团',age:'3岁',weight:5.2,note:'有点胖，但很可爱！',avatarDataUrl:''};
 
 const demoState={
   demo:true,
@@ -50,6 +50,7 @@ function normalizeState(raw){
   const s=raw&&typeof raw==='object'?raw:emptyState();
   s.demo=Boolean(s.demo);
   s.pet={...(s.demo?DEMO_PET:REAL_PET),...(s.pet||{})};
+  s.pet.avatarDataUrl=typeof s.pet.avatarDataUrl==='string'?s.pet.avatarDataUrl:'';
   s.records=Array.isArray(s.records)?s.records:[];
   s.wardrobe=(Array.isArray(s.wardrobe)?s.wardrobe:[]).map(w=>({
     ...w,
@@ -95,6 +96,13 @@ let filter='all';
 let editingRecordId=null;
 
 function render(){renderPet();renderHome();renderRecords();renderInventory();renderWardrobe();renderReport()}
+function applyAvatar(element,dataUrl){
+  if(!element)return;
+  const hasPhoto=Boolean(dataUrl);
+  element.classList.toggle('has-photo',hasPhoto);
+  element.classList.toggle('mascot-card',!hasPhoto);
+  element.style.backgroundImage=hasPhoto?`url("${dataUrl}")`:'';
+}
 function renderPet(){
   const p=state.pet;
   const meta=[p.name,p.age,p.weight?`${p.weight}kg`:''].filter(Boolean).join(' · ');
@@ -103,6 +111,8 @@ function renderPet(){
   document.querySelector('#commentLabel').textContent=`${p.name||'主子'}的消费点评`;
   document.querySelector('#wardrobeHeading').textContent=`${p.name||'主子'}的衣橱`;
   document.querySelector('#reportPetName').textContent=p.name||'主子';
+  applyAvatar(document.querySelector('#petAvatar'),p.avatarDataUrl);
+  applyAvatar(document.querySelector('#reportAvatar'),p.avatarDataUrl);
 }
 function renderHome(){
   const today=state.records.filter(r=>isSameDay(r.date,iso(now)));
@@ -230,13 +240,59 @@ function deleteRecord(id){
 ['#quickAddBtn','#addRecordBtn'].forEach(s=>document.querySelector(s).addEventListener('click',()=>openExpense()));
 
 const petDialog=document.querySelector('#petDialog');
+let pendingAvatarDataUrl='';
+function refreshAvatarPreview(){
+  applyAvatar(document.querySelector('#avatarPreview'),pendingAvatarDataUrl);
+}
+function compressAvatar(file){
+  return new Promise((resolve,reject)=>{
+    if(!file||!file.type.startsWith('image/')){reject(new Error('not-image'));return;}
+    if(file.size>20*1024*1024){reject(new Error('too-large'));return;}
+    const reader=new FileReader();
+    reader.onerror=()=>reject(new Error('read-failed'));
+    reader.onload=()=>{
+      const img=new Image();
+      img.onerror=()=>reject(new Error('decode-failed'));
+      img.onload=()=>{
+        const side=Math.min(img.naturalWidth,img.naturalHeight);
+        const sx=(img.naturalWidth-side)/2,sy=(img.naturalHeight-side)/2;
+        const size=Math.min(512,side);
+        const canvas=document.createElement('canvas');canvas.width=size;canvas.height=size;
+        const ctx=canvas.getContext('2d');
+        ctx.drawImage(img,sx,sy,side,side,0,0,size,size);
+        resolve(canvas.toDataURL('image/jpeg',.82));
+      };
+      img.src=reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 document.querySelector('#petHero').addEventListener('click',()=>{
   const p=state.pet;
+  pendingAvatarDataUrl=p.avatarDataUrl||'';
+  refreshAvatarPreview();
   document.querySelector('#petNameInput').value=p.name||'';
   document.querySelector('#petAgeInput').value=p.age||'';
   document.querySelector('#petWeightInput').value=p.weight||'';
   document.querySelector('#petNoteInput').value=p.note||'';
   petDialog.showModal();
+});
+document.querySelector('#chooseAvatarBtn').addEventListener('click',()=>document.querySelector('#petAvatarInput').click());
+document.querySelector('#removeAvatarBtn').addEventListener('click',()=>{
+  pendingAvatarDataUrl='';
+  refreshAvatarPreview();
+  toast('已恢复墨团默认头像');
+});
+document.querySelector('#petAvatarInput').addEventListener('change',async e=>{
+  const file=e.target.files?.[0];e.target.value='';
+  if(!file)return;
+  try{
+    toast('正在把照片变成可爱头像…');
+    pendingAvatarDataUrl=await compressAvatar(file);
+    refreshAvatarPreview();
+  }catch(err){
+    alert(err.message==='too-large'?'照片太大啦，请选择 20MB 以内的图片。':'这张图片暂时无法读取，请换一张 JPG / PNG / WebP。');
+  }
 });
 document.querySelector('#petForm').addEventListener('submit',e=>{
   e.preventDefault();
@@ -244,9 +300,15 @@ document.querySelector('#petForm').addEventListener('submit',e=>{
     name:document.querySelector('#petNameInput').value.trim()||'主子',
     age:document.querySelector('#petAgeInput').value.trim(),
     weight:Number(document.querySelector('#petWeightInput').value)||'',
-    note:document.querySelector('#petNoteInput').value.trim()
+    note:document.querySelector('#petNoteInput').value.trim(),
+    avatarDataUrl:pendingAvatarDataUrl
   };
-  save();render();petDialog.close();toast('主子档案更新啦 🐾');
+  try{save();}
+  catch{
+    alert('头像保存失败，浏览器本地空间可能不够。可以换一张照片再试。');
+    return;
+  }
+  render();petDialog.close();toast('主子头像和档案都更新啦 🐾');
 });
 
 const simpleDialog=document.querySelector('#simpleDialog');let simpleMode='';
@@ -331,6 +393,22 @@ document.querySelector('#demoBtn').addEventListener('click',setDemoMode);
 function rounded(ctx,x,y,w,h,r,fill){
   ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill();
 }
+function loadCanvasImage(src){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>resolve(img);
+    img.onerror=reject;
+    img.src=src;
+  });
+}
+function drawImageCircle(ctx,img,cx,cy,r){
+  ctx.save();ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.clip();
+  const side=Math.min(img.naturalWidth,img.naturalHeight);
+  const sx=(img.naturalWidth-side)/2,sy=(img.naturalHeight-side)/2;
+  ctx.drawImage(img,sx,sy,side,side,cx-r,cy-r,r*2,r*2);
+  ctx.restore();
+  ctx.strokeStyle='rgba(255,255,255,.92)';ctx.lineWidth=8;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();
+}
 function drawCat(ctx,cx,cy,scale=1){
   ctx.save();ctx.translate(cx,cy);ctx.scale(scale,scale);
   ctx.fillStyle='#111820';
@@ -344,7 +422,7 @@ function drawCat(ctx,cx,cy,scale=1){
   ctx.fillStyle='#58c8a6';ctx.beginPath();ctx.moveTo(-12,-67);ctx.quadraticCurveTo(0,-96,12,-68);ctx.quadraticCurveTo(3,-71,0,-58);ctx.quadraticCurveTo(-4,-70,-12,-67);ctx.fill();
   ctx.restore();
 }
-function generateSharePoster(){
+async function generateSharePoster(){
   const canvas=document.querySelector('#shareCanvas'),ctx=canvas.getContext('2d'),W=900,H=1200;
   const p=state.pet,records=state.records.filter(r=>inYear(r.date)),total=sum(records),data=byCategory(records);
   const sorted=CATEGORIES.filter(catItem=>data[catItem.id]>0).sort((a,b)=>data[b.id]-data[a.id]).slice(0,5);
@@ -365,7 +443,10 @@ function generateSharePoster(){
   ctx.fillStyle='#12312e';ctx.font='900 45px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText(`${p.name||'主子'}的 ${y} 年度账单`,78,215);
   ctx.fillStyle='#5f746c';ctx.font='500 23px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText('这一年，谢谢你把最好的都给我 ♡',80,255);
   ctx.fillStyle='#0f6f5d';ctx.font='900 30px "PingFang SC","Microsoft YaHei",sans-serif';ctx.fillText('养我很贵，但值得。',80,320);
-  drawCat(ctx,735,300,.72);
+  if(p.avatarDataUrl){
+    try{const avatar=await loadCanvasImage(p.avatarDataUrl);drawImageCircle(ctx,avatar,735,292,84);}
+    catch{drawCat(ctx,735,300,.72);}
+  }else drawCat(ctx,735,300,.72);
 
   const kpis=[
     ['年度总消费',money(total)],
@@ -404,10 +485,12 @@ function generateSharePoster(){
   return canvas;
 }
 const shareDialog=document.querySelector('#shareDialog');
-document.querySelector('#shareBtn').addEventListener('click',()=>{generateSharePoster();shareDialog.showModal()});
+document.querySelector('#shareBtn').addEventListener('click',async()=>{
+  await generateSharePoster();shareDialog.showModal();
+});
 document.querySelector('#shareCloseBtn').addEventListener('click',()=>shareDialog.close());
-document.querySelector('#downloadShareBtn').addEventListener('click',()=>{
-  const canvas=generateSharePoster();
+document.querySelector('#downloadShareBtn').addEventListener('click',async()=>{
+  const canvas=await generateSharePoster();
   canvas.toBlob(blob=>{
     if(!blob)return;
     const url=URL.createObjectURL(blob),a=document.createElement('a');
@@ -421,7 +504,7 @@ function downloadBlob(content,type,filename){
   a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1200);
 }
 function exportBackup(){
-  const payload={app:'PawBudget',version:'0.1.2',exportedAt:new Date().toISOString(),data:{...state,demo:false}};
+  const payload={app:'PawBudget',version:'0.1.3',exportedAt:new Date().toISOString(),data:{...state,demo:false}};
   downloadBlob(JSON.stringify(payload,null,2),'application/json;charset=utf-8',`PawBudget-${state.pet.name||'pet'}-${iso(now)}.json`);
   toast('完整账本备份已导出');
 }
