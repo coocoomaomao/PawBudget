@@ -192,20 +192,40 @@ function nav(page){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.nav===page));
   window.scrollTo({top:0,behavior:'smooth'});
 }
+function closeDialog(dialog){
+  if(!dialog?.open)return;
+  dialog.close();
+  if(dialog.id==='expenseDialog')editingRecordId=null;
+  if(dialog.id==='simpleDialog'){
+    const form=document.querySelector('#simpleForm');
+    if(form)form.reset();
+  }
+  if(dialog.id==='restockDialog')restockInventoryId=null;
+}
+document.querySelectorAll('dialog').forEach(dialog=>{
+  dialog.addEventListener('cancel',event=>{
+    event.preventDefault();
+    closeDialog(dialog);
+  });
+  dialog.addEventListener('click',event=>{
+    if(event.target===dialog)closeDialog(dialog);
+  });
+});
 document.addEventListener('click',e=>{
   const closeBtn=e.target.closest('[data-close-dialog]');
   if(closeBtn){
-    const dialog=closeBtn.closest('dialog');
-    if(dialog?.open)dialog.close();
+    e.preventDefault();
+    e.stopPropagation();
+    closeDialog(closeBtn.closest('dialog'));
     return;
   }
-  const n=e.target.closest('[data-nav]');if(n)nav(n.dataset.nav);
-  const a=e.target.closest('[data-action="add"]');if(a)openExpense();
-  const f=e.target.closest('[data-filter]');if(f){filter=f.dataset.filter;renderRecords()}
-  const edit=e.target.closest('.record-edit');if(edit)openExpense(edit.dataset.id);
-  const del=e.target.closest('.record-delete');if(del)deleteRecord(del.dataset.id);
-  const restock=e.target.closest('.inventory-restock');if(restock)openRestock(restock.dataset.id);
-  const wear=e.target.closest('.wardrobe-wear');if(wear)recordWear(wear.dataset.id);
+  const n=e.target.closest('[data-nav]');if(n){nav(n.dataset.nav);return;}
+  const a=e.target.closest('[data-action="add"]');if(a){openExpense();return;}
+  const f=e.target.closest('[data-filter]');if(f){filter=f.dataset.filter;renderRecords();return;}
+  const edit=e.target.closest('.record-edit');if(edit){openExpense(edit.dataset.id);return;}
+  const del=e.target.closest('.record-delete');if(del){deleteRecord(del.dataset.id);return;}
+  const restock=e.target.closest('.inventory-restock');if(restock){openRestock(restock.dataset.id);return;}
+  const wear=e.target.closest('.wardrobe-wear');if(wear){recordWear(wear.dataset.id);return;}
 });
 
 const expenseDialog=document.querySelector('#expenseDialog');
@@ -494,7 +514,6 @@ const shareDialog=document.querySelector('#shareDialog');
 document.querySelector('#shareBtn').addEventListener('click',async()=>{
   await generateSharePoster();shareDialog.showModal();
 });
-document.querySelector('#shareCloseBtn').addEventListener('click',()=>shareDialog.close());
 document.querySelector('#downloadShareBtn').addEventListener('click',async()=>{
   const canvas=await generateSharePoster();
   canvas.toBlob(blob=>{
