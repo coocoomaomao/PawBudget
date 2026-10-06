@@ -1,6 +1,6 @@
 {
   "name": "pawbudget-desktop",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "PawBudget 毛球账本 - local-first pet expense, inventory and wardrobe tracker",
   "author": "MeowBuild Lab",
   "license": "MIT",
@@ -41,7 +41,7 @@
         }
       ],
       "forceCodeSigning": false,
-      "icon": "build/icon.png"
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
