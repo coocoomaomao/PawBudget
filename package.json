@@ -1,19 +1,17 @@
 {
   "name": "pawbudget-desktop",
-  "version": "0.1.5",
+  "version": "0.1.5.1",
   "description": "PawBudget 毛球账本 - local-first pet expense, inventory and wardrobe tracker",
   "author": "MeowBuild Lab",
   "license": "MIT",
   "main": "electron/main.cjs",
   "scripts": {
     "start": "electron .",
-    "dist:win": "npm run make:icon && electron-builder --win nsis --publish never",
-    "make:icon": "png-to-ico build/icon-source.png > build/icon.ico"
+    "dist:win": "electron-builder --win nsis --publish never"
   },
   "devDependencies": {
     "electron": "^38.0.0",
-    "electron-builder": "^26.0.12",
-    "png-to-ico": "^3.0.2"
+    "electron-builder": "^26.0.12"
   },
   "build": {
     "appId": "com.meowbuild.pawbudget",
