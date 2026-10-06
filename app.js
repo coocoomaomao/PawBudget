@@ -64,7 +64,7 @@ function normalizeState(raw){
   }));
   s.inventory=(Array.isArray(s.inventory)?s.inventory:[]).map(i=>{
     if(i.remainQuantity==null && i.days!=null){
-      return {...i,totalQuantity:Number(i.total||30),remainQuantity:Number(i.days),dailyUsage:1,unit:i.unit||'天',restocks:Array.isArray(i.restocks)?i.restocks:[]};
+      return {...i,totalQuantity:Number(i.total||30),remainQuantity:Number(i.days),dailyUsage:1,unit:i.unit||'天',restocks:Array.isArray(i.restocks)?i.restocks:[],imageKey:typeof i.imageKey==='string'?i.imageKey:''};
     }
     return {
       ...i,
@@ -695,14 +695,23 @@ function downloadBlob(content,type,filename){
   const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1200);
 }
-function exportBackup(){
-  const payload={app:'PawBudget',version:'0.1.3',exportedAt:new Date().toISOString(),data:{...state,demo:false}};
-  downloadBlob(JSON.stringify(payload,null,2),'application/json;charset=utf-8',`PawBudget-${state.pet.name||'pet'}-${iso(now)}.json`);
-  toast('完整账本备份已导出');
+async function exportBackup(){
+  try{
+    const images=[];
+    for(const key of referencedPhotoKeys()){
+      const blob=await getPhotoBlob(key);
+      if(blob)images.push({key,dataUrl:await blobToDataUrl(blob)});
+    }
+    const payload={app:'PawBudget',version:'0.1.4',exportedAt:new Date().toISOString(),data:{...state,demo:false},images};
+    downloadBlob(JSON.stringify(payload,null,2),'application/json;charset=utf-8',`PawBudget-${state.pet.name||'pet'}-${iso(now)}.json`);
+    toast(images.length?`完整账本已备份，包含 ${images.length} 张物品照片`:'完整账本备份已导出');
+  }catch{
+    alert('备份照片时遇到问题，请稍后再试。');
+  }
 }
 function csvCell(value){return '"'+String(value??'').replace(/"/g,'""')+'"'}
 function exportCsv(){
-  const rows=[['日期','分类','商品','金额','备注'],...state.records.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(r=>[r.date,cat(r.category).name,r.item,r.amount,r.note||''])];
+  const rows=[['日期','分类','商品','金额','备注','有图片'],...state.records.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(r=>[r.date,cat(r.category).name,r.item,r.amount,r.note||'',r.imageKey?'是':'否'])];
   const csv='\uFEFF'+rows.map(row=>row.map(csvCell).join(',')).join('\n');
   downloadBlob(csv,'text/csv;charset=utf-8',`PawBudget-消费记录-${iso(now)}.csv`);
   toast('消费 CSV 已导出');
@@ -711,9 +720,19 @@ async function importBackup(file){
   try{
     const payload=JSON.parse(await file.text()),candidate=payload.data||payload;
     if(!candidate||typeof candidate!=='object'||!Array.isArray(candidate.records)||!Array.isArray(candidate.inventory)||!Array.isArray(candidate.wardrobe))throw new Error('invalid');
-    if(!confirm('导入会覆盖当前真实账本。确定继续吗？'))return;
-    state=normalizeState({...candidate,demo:false});localStorage.setItem(REAL_BACKUP_KEY,JSON.stringify(state));save();render();toast('账本导入成功');
-  }catch{alert('这个文件不是有效的 PawBudget 备份。');}
+    if(!confirm('导入会覆盖当前真实账本和物品照片。确定继续吗？'))return;
+    await clearPhotoStore();
+    if(Array.isArray(payload.images)){
+      for(const image of payload.images){
+        if(image?.key&&typeof image.dataUrl==='string'){
+          await putPhotoBlob(image.key,await dataUrlToBlob(image.dataUrl));
+        }
+      }
+    }
+    state=normalizeState({...candidate,demo:false});
+    localStorage.setItem(REAL_BACKUP_KEY,JSON.stringify(state));save();render();
+    toast(Array.isArray(payload.images)&&payload.images.length?`账本和 ${payload.images.length} 张照片已恢复`:'账本导入成功');
+  }catch{alert('这个文件不是有效的 PawBudget 备份，或照片恢复失败。');}
 }
 document.querySelector('#exportDataBtn').addEventListener('click',exportBackup);
 document.querySelector('#exportCsvBtn').addEventListener('click',exportCsv);
