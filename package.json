@@ -25,7 +25,8 @@
       "sw.js",
       "electron/**/*",
       "LICENSE",
-      "README.md"
+      "README.md",
+      "build/**/*"
     ],
     "directories": {
       "output": "dist"
@@ -39,7 +40,8 @@
           ]
         }
       ],
-      "forceCodeSigning": false
+      "forceCodeSigning": false,
+      "icon": "build/icon.png"
     },
     "nsis": {
       "oneClick": false,
