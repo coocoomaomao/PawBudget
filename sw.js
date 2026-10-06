@@ -1,4 +1,4 @@
-const CACHE='pawbudget-v0.1.3';
+const CACHE='pawbudget-v0.1.3-hotfix-2';
 const ASSETS=['./','./index.html','./styles.css','./app.js','./manifest.webmanifest'];
 
 self.addEventListener('install',event=>{
