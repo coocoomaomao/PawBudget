@@ -1,0 +1,53 @@
+{
+  "name": "pawbudget-desktop",
+  "version": "0.1.4",
+  "description": "PawBudget 毛球账本 - local-first pet expense, inventory and wardrobe tracker",
+  "author": "MeowBuild Lab",
+  "license": "MIT",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.meowbuild.pawbudget",
+    "productName": "PawBudget 毛球账本",
+    "asar": true,
+    "files": [
+      "index.html",
+      "styles.css",
+      "app.js",
+      "manifest.webmanifest",
+      "sw.js",
+      "electron/**/*",
+      "LICENSE",
+      "README.md"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "forceCodeSigning": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "PawBudget 毛球账本",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}
