@@ -37,14 +37,14 @@
 
     <main>
       <section class="page active" data-page="home">
-        <div class="pet-hero">
+        <button class="pet-hero" id="petHero" type="button">
           <div class="pet-avatar large mascot-card"></div>
           <div class="pet-copy">
-            <div class="pet-title">墨团 · 3岁 · 5.2kg</div>
-            <div class="pet-sub">有点胖，但很可爱！</div>
+            <div class="pet-title" id="petTitle">墨团 · 3岁 · 5.2kg</div>
+            <div class="pet-sub" id="petSub">有点胖，但很可爱！</div>
           </div>
-          <span class="chev">›</span>
-        </div>
+          <span class="chev">编辑 ›</span>
+        </button>
 
         <div class="stats-grid">
           <article class="stat pink"><span class="stat-icon">👛</span><div><small>今日消费</small><strong id="todaySpend">¥0</strong></div></article>
@@ -63,7 +63,7 @@
 
         <section class="mascot-note card">
           <div class="pet-avatar mascot-card sleepy"></div>
-          <div><strong id="mascotComment">今天还没花钱？本猫不信。</strong><p>墨团的消费点评</p></div>
+          <div><strong id="mascotComment">今天还没花钱？本猫不信。</strong><p id="commentLabel">墨团的消费点评</p></div>
         </section>
 
         <div class="section-head quick-title"><div><h2>快捷功能</h2><p>常用操作一步到位</p></div></div>
@@ -88,7 +88,7 @@
       </section>
 
       <section class="page" data-page="wardrobe">
-        <div class="page-head"><div><h1>墨团的衣橱</h1><p>贵不贵，看单次穿着成本</p></div><button class="primary mini" id="addWardrobeBtn">＋ 添加</button></div>
+        <div class="page-head"><div><h1 id="wardrobeHeading">墨团的衣橱</h1><p>贵不贵，看单次穿着成本</p></div><button class="primary mini" id="addWardrobeBtn">＋ 添加</button></div>
         <div class="wardrobe-summary card">
           <div><small>衣橱总投入</small><strong id="wardrobeTotal">¥0</strong></div>
           <div><small>今年穿搭</small><strong id="wearCount">0 次</strong></div>
@@ -100,7 +100,7 @@
       <section class="page" data-page="report">
         <div class="report-hero">
           <div class="report-topline">PawBudget · 毛球账本</div>
-          <h1>墨团的 <span id="reportYear"></span> 年度账单</h1>
+          <h1><span id="reportPetName">墨团</span>的 <span id="reportYear"></span> 年度账单</h1>
           <p>这一年，谢谢你把最好的都给我 ♡</p>
           <div class="box-cat mascot-card"></div>
         </div>
@@ -125,13 +125,13 @@
 
   <dialog id="expenseDialog" class="modal">
     <form method="dialog" id="expenseForm">
-      <div class="modal-head"><div><h2>记一笔消费</h2><p>买得开心，也要记得清楚～</p></div><button value="cancel" class="close">×</button></div>
+      <div class="modal-head"><div><h2 id="expenseModalTitle">记一笔消费</h2><p>买得开心，也要记得清楚～</p></div><button value="cancel" class="close">×</button></div>
       <div class="category-grid" id="categoryPicker"></div>
       <label>金额<input id="amountInput" type="number" min="0" step="0.01" placeholder="¥ 0.00" required /></label>
       <label>商品<input id="itemInput" type="text" placeholder="例如：万圣节斗篷" required /></label>
       <label>日期<input id="dateInput" type="date" required /></label>
       <label>备注<input id="noteInput" type="text" placeholder="例如：拍照超可爱" /></label>
-      <button class="primary full" value="default" type="submit">保存记录</button>
+      <button class="primary full" id="expenseSubmitBtn" value="default" type="submit">保存记录</button>
     </form>
   </dialog>
 
@@ -141,6 +141,25 @@
       <div id="simpleFields"></div>
       <button class="primary full" value="default" type="submit">保存</button>
     </form>
+  </dialog>
+
+  <dialog id="petDialog" class="modal">
+    <form method="dialog" id="petForm">
+      <div class="modal-head"><div><h2>宠物档案</h2><p>把主子的基本信息记下来</p></div><button value="cancel" class="close">×</button></div>
+      <label>名字<input id="petNameInput" maxlength="20" placeholder="例如：墨团" required /></label>
+      <label>年龄<input id="petAgeInput" maxlength="20" placeholder="例如：3岁" /></label>
+      <label>体重（kg）<input id="petWeightInput" type="number" min="0" step="0.1" placeholder="5.2" /></label>
+      <label>一句话介绍<input id="petNoteInput" maxlength="60" placeholder="例如：有点胖，但很可爱！" /></label>
+      <button class="primary full" value="default" type="submit">保存档案</button>
+    </form>
+  </dialog>
+
+  <dialog id="shareDialog" class="modal share-modal">
+    <div class="share-wrap">
+      <div class="modal-head"><div><h2>年度账单分享图</h2><p>3:4 · 900 × 1200，可直接发小红书</p></div><button class="close" id="shareCloseBtn">×</button></div>
+      <canvas id="shareCanvas" width="900" height="1200"></canvas>
+      <button class="primary full" id="downloadShareBtn" type="button">下载 PNG 分享图</button>
+    </div>
   </dialog>
 
   <div class="toast" id="toast"></div>
