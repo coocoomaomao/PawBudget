@@ -76,3 +76,18 @@ main{padding:0 18px}.page{display:none;animation:fade .25s ease}.page.active{dis
   padding:13px 16px;font-weight:900
 }
 .modal[open]{overscroll-behavior:contain}
+
+/* v0.1.4 item photos */
+.item-photo-editor{display:flex;gap:12px;align-items:center;margin:14px 0;padding:12px;border:1px solid #e5ece8;border-radius:18px;background:linear-gradient(135deg,#f8fcfa,#fffaf2)}
+.item-photo-preview{width:78px;height:78px;flex:0 0 auto;border-radius:18px;background:#eef4f1;display:grid;place-items:center;font-size:28px;overflow:hidden;border:1px dashed #cfdcd6}
+.item-photo-preview.has-photo{border-style:solid;background:#fff}
+.item-photo-preview img{width:100%;height:100%;object-fit:cover;display:block}
+.item-photo-copy{flex:1;min-width:0}.item-photo-copy strong{display:block;font-size:14px}.item-photo-copy small{display:block;color:var(--muted);font-size:11px;line-height:1.45;margin-top:3px}
+.record-photo{width:46px;height:46px;border-radius:15px;object-fit:cover;display:block;border:1px solid #e5ebe7;background:#f4f7f5}
+.inventory-photo{width:56px;height:56px;border-radius:16px;object-fit:cover;display:block;border:1px solid #e5ebe7;background:#f4f7f5;flex:0 0 auto}
+.inventory-leading{display:flex;align-items:center;gap:11px}
+.wardrobe-visual.has-photo{padding:0;background:#f4f7f5}
+.wardrobe-visual.has-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-skeleton{background:linear-gradient(90deg,#edf2ef,#f8fbf9,#edf2ef);background-size:200% 100%;animation:photoPulse 1.2s linear infinite}
+@keyframes photoPulse{to{background-position:-200% 0}}
+@media(max-width:390px){.item-photo-editor{align-items:flex-start}.item-photo-preview{width:68px;height:68px}}
