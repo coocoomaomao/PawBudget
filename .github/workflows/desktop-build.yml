@@ -8,6 +8,7 @@ on:
       - "package.json"
       - "electron/**"
       - "build/**"
+      - "scripts/**"
       - ".github/workflows/desktop-build.yml"
 
 permissions:
