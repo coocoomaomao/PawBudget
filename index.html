@@ -143,6 +143,19 @@
       <div class="category-grid" id="categoryPicker"></div>
       <label>金额<input id="amountInput" type="number" min="0" step="0.01" placeholder="¥ 0.00" required /></label>
       <label>商品<input id="itemInput" type="text" placeholder="例如：万圣节斗篷" required /></label>
+      <div class="item-photo-editor">
+        <div class="item-photo-preview" id="expensePhotoPreview"><span>📷</span></div>
+        <div class="item-photo-copy">
+          <strong>这次买了什么？</strong>
+          <small>可选 · 照片只保存在当前设备，不上传</small>
+          <div class="avatar-buttons">
+            <button type="button" class="secondary-action compact" id="expenseChoosePhotoBtn">选择图片</button>
+            <button type="button" class="secondary-action compact subtle" id="expenseRemovePhotoBtn">不使用图片</button>
+          </div>
+        </div>
+      </div>
+      <input id="expensePhotoInput" type="file" accept="image/*" hidden />
+
       <label>日期<input id="dateInput" type="date" required /></label>
       <label>备注<input id="noteInput" type="text" placeholder="例如：拍照超可爱" /></label>
       <div class="form-actions"><button type="button" class="cancel-btn" data-close-dialog>取消</button><button class="primary" id="expenseSubmitBtn" value="default" type="submit">保存记录</button></div>
@@ -153,6 +166,19 @@
     <form method="dialog" id="simpleForm">
       <div class="modal-head"><div><h2 id="simpleTitle">添加</h2><p id="simpleSubtitle"></p></div><button type="button" class="close" data-close-dialog>×</button></div>
       <div id="simpleFields"></div>
+      <div class="item-photo-editor">
+        <div class="item-photo-preview" id="simplePhotoPreview"><span>📷</span></div>
+        <div class="item-photo-copy">
+          <strong>给这个物品留张照片</strong>
+          <small>可选 · 照片只保存在当前设备，不上传</small>
+          <div class="avatar-buttons">
+            <button type="button" class="secondary-action compact" id="simpleChoosePhotoBtn">选择图片</button>
+            <button type="button" class="secondary-action compact subtle" id="simpleRemovePhotoBtn">不使用图片</button>
+          </div>
+        </div>
+      </div>
+      <input id="simplePhotoInput" type="file" accept="image/*" hidden />
+
       <div class="form-actions"><button type="button" class="cancel-btn" data-close-dialog>取消</button><button class="primary" value="default" type="submit">保存</button></div>
     </form>
   </dialog>
