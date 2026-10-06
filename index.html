@@ -38,7 +38,7 @@
     <main>
       <section class="page active" data-page="home">
         <button class="pet-hero" id="petHero" type="button">
-          <div class="pet-avatar large mascot-card"></div>
+          <div class="pet-avatar large mascot-card" id="petAvatar" aria-label="宠物头像"></div>
           <div class="pet-copy">
             <div class="pet-title" id="petTitle">墨团 · 3岁 · 5.2kg</div>
             <div class="pet-sub" id="petSub">有点胖，但很可爱！</div>
@@ -102,7 +102,7 @@
           <div class="report-topline">PawBudget · 毛球账本</div>
           <h1><span id="reportPetName">墨团</span>的 <span id="reportYear"></span> 年度账单</h1>
           <p>这一年，谢谢你把最好的都给我 ♡</p>
-          <div class="box-cat mascot-card"></div>
+          <div class="box-cat mascot-card" id="reportAvatar" aria-label="宠物头像"></div>
         </div>
         <div class="report-card card">
           <div class="report-kpis"><div><small>年度总消费</small><strong id="reportTotal">¥0</strong></div><div><small>平均每天</small><strong id="reportDaily">¥0</strong></div></div>
@@ -166,7 +166,19 @@
 
   <dialog id="petDialog" class="modal">
     <form method="dialog" id="petForm">
-      <div class="modal-head"><div><h2>宠物档案</h2><p>把主子的基本信息记下来</p></div><button value="cancel" class="close">×</button></div>
+      <div class="modal-head"><div><h2>宠物档案</h2><p>把主子的基本信息和最可爱的照片留下来</p></div><button value="cancel" class="close">×</button></div>
+      <div class="avatar-editor">
+        <div class="pet-avatar avatar-preview mascot-card" id="avatarPreview"></div>
+        <div class="avatar-editor-copy">
+          <strong>毛孩子头像</strong>
+          <small>照片只保存在当前设备，不会上传</small>
+          <div class="avatar-buttons">
+            <button type="button" class="secondary-action compact" id="chooseAvatarBtn">选择照片</button>
+            <button type="button" class="secondary-action compact subtle" id="removeAvatarBtn">恢复默认</button>
+          </div>
+        </div>
+      </div>
+      <input id="petAvatarInput" type="file" accept="image/*" hidden />
       <label>名字<input id="petNameInput" maxlength="20" placeholder="例如：墨团" required /></label>
       <label>年龄<input id="petAgeInput" maxlength="20" placeholder="例如：3岁" /></label>
       <label>体重（kg）<input id="petWeightInput" type="number" min="0" step="0.1" placeholder="5.2" /></label>
