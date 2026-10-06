@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0e7c66" />
+  <title>PawBudget 毛球账本</title>
+  <meta name="description" content="记录宠物消费、库存提醒、宠物衣橱与年度账单。" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="cat-logo" aria-hidden="true">
+          <svg viewBox="0 0 96 96" role="img">
+            <path d="M22 35 24 13 41 29M74 35 72 13 55 29" fill="#111820"/>
+            <ellipse cx="48" cy="53" rx="31" ry="29" fill="#111820"/>
+            <ellipse cx="37" cy="48" rx="5" ry="7" fill="#fff"/><ellipse cx="59" cy="48" rx="5" ry="7" fill="#fff"/>
+            <circle cx="38" cy="49" r="2.4" fill="#111820"/><circle cx="60" cy="49" r="2.4" fill="#111820"/>
+            <ellipse cx="36" cy="60" rx="6" ry="3" fill="#f7a7aa" opacity=".8"/><ellipse cx="60" cy="60" rx="6" ry="3" fill="#f7a7aa" opacity=".8"/>
+            <path d="M43 58 Q48 63 53 58" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+            <path d="M44 17 Q50 5 56 17 Q51 16 48 22 Q46 18 44 17Z" fill="#54c7a4"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-name">PawBudget</div>
+          <div class="brand-cn">毛球账本</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="demoBtn" title="切换演示数据">演示</button>
+        <button class="icon-btn plus" id="quickAddBtn" aria-label="记一笔">＋</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="page active" data-page="home">
+        <div class="pet-hero">
+          <div class="pet-avatar large mascot-card"></div>
+          <div class="pet-copy">
+            <div class="pet-title">墨团 · 3岁 · 5.2kg</div>
+            <div class="pet-sub">有点胖，但很可爱！</div>
+          </div>
+          <span class="chev">›</span>
+        </div>
+
+        <div class="stats-grid">
+          <article class="stat pink"><span class="stat-icon">👛</span><div><small>今日消费</small><strong id="todaySpend">¥0</strong></div></article>
+          <article class="stat mint"><span class="stat-icon">🗓️</span><div><small>本月消费</small><strong id="monthSpend">¥0</strong></div></article>
+          <article class="stat blue"><span class="stat-icon">📈</span><div><small>今年累计</small><strong id="yearSpend">¥0</strong></div></article>
+          <article class="stat yellow"><span class="stat-icon">🥣</span><div><small>猫粮库存</small><strong id="foodDays">-- 天</strong></div></article>
+        </div>
+
+        <section class="card spending-card">
+          <div class="section-head"><div><h2>本月消费分布</h2><p>每一笔都算得清楚</p></div><span id="monthLabel"></span></div>
+          <div class="chart-wrap">
+            <div class="donut" id="donut"><div class="donut-center"><strong id="donutTotal">¥0</strong><small>本月消费</small></div></div>
+            <div class="legend" id="legend"></div>
+          </div>
+        </section>
+
+        <section class="mascot-note card">
+          <div class="pet-avatar mascot-card sleepy"></div>
+          <div><strong id="mascotComment">今天还没花钱？本猫不信。</strong><p>墨团的消费点评</p></div>
+        </section>
+
+        <div class="section-head quick-title"><div><h2>快捷功能</h2><p>常用操作一步到位</p></div></div>
+        <div class="quick-grid">
+          <button class="quick mint" data-action="add"><span>✎</span><div><strong>记一笔</strong><small>记录每一份爱</small></div><b>›</b></button>
+          <button class="quick yellow" data-nav="inventory"><span>▣</span><div><strong>库存</strong><small>不再忘记补货</small></div><b>›</b></button>
+          <button class="quick pink" data-nav="wardrobe"><span>👕</span><div><strong>衣橱</strong><small>记录可爱穿搭</small></div><b>›</b></button>
+          <button class="quick blue" data-nav="report"><span>▥</span><div><strong>账单</strong><small>看看主子花了多少</small></div><b>›</b></button>
+        </div>
+      </section>
+
+      <section class="page" data-page="records">
+        <div class="page-head"><div><h1>消费记录</h1><p>钱花哪儿了，一眼看清</p></div><button class="primary mini" id="addRecordBtn">＋ 记一笔</button></div>
+        <div class="filter-row" id="recordFilters"></div>
+        <div class="record-list" id="recordList"></div>
+      </section>
+
+      <section class="page" data-page="inventory">
+        <div class="page-head"><div><h1>库存提醒</h1><p>饭可以少吃一口，不能断粮</p></div><button class="primary mini" id="addInventoryBtn">＋ 添加</button></div>
+        <div class="mascot-note slim card"><div class="pet-avatar mascot-card alert"></div><div><strong>饭！要！没！了！</strong><p>剩余不足 7 天会重点提醒</p></div></div>
+        <div class="inventory-grid" id="inventoryList"></div>
+      </section>
+
+      <section class="page" data-page="wardrobe">
+        <div class="page-head"><div><h1>墨团的衣橱</h1><p>贵不贵，看单次穿着成本</p></div><button class="primary mini" id="addWardrobeBtn">＋ 添加</button></div>
+        <div class="wardrobe-summary card">
+          <div><small>衣橱总投入</small><strong id="wardrobeTotal">¥0</strong></div>
+          <div><small>今年穿搭</small><strong id="wearCount">0 次</strong></div>
+          <div><small>最高单次成本</small><strong id="highestWearCost">¥0</strong></div>
+        </div>
+        <div class="wardrobe-grid" id="wardrobeList"></div>
+      </section>
+
+      <section class="page" data-page="report">
+        <div class="report-hero">
+          <div class="report-topline">PawBudget · 毛球账本</div>
+          <h1>墨团的 <span id="reportYear"></span> 年度账单</h1>
+          <p>这一年，谢谢你把最好的都给我 ♡</p>
+          <div class="box-cat mascot-card"></div>
+        </div>
+        <div class="report-card card">
+          <div class="report-kpis"><div><small>年度总消费</small><strong id="reportTotal">¥0</strong></div><div><small>平均每天</small><strong id="reportDaily">¥0</strong></div></div>
+          <h2>消费分类</h2>
+          <div id="reportBars" class="report-bars"></div>
+          <div class="report-quote">养我很贵，但值得。<small>你买你的，我玩纸箱。</small></div>
+          <button class="primary full" id="shareBtn">生成分享账单</button>
+        </div>
+      </section>
+    </main>
+
+    <nav class="tabbar">
+      <button class="tab active" data-nav="home"><span>⌂</span><small>首页</small></button>
+      <button class="tab" data-nav="records"><span>✎</span><small>记账</small></button>
+      <button class="tab" data-nav="inventory"><span>▣</span><small>库存</small></button>
+      <button class="tab" data-nav="wardrobe"><span>♙</span><small>衣橱</small></button>
+      <button class="tab" data-nav="report"><span>◔</span><small>账单</small></button>
+    </nav>
+  </div>
+
+  <dialog id="expenseDialog" class="modal">
+    <form method="dialog" id="expenseForm">
+      <div class="modal-head"><div><h2>记一笔消费</h2><p>买得开心，也要记得清楚～</p></div><button value="cancel" class="close">×</button></div>
+      <div class="category-grid" id="categoryPicker"></div>
+      <label>金额<input id="amountInput" type="number" min="0" step="0.01" placeholder="¥ 0.00" required /></label>
+      <label>商品<input id="itemInput" type="text" placeholder="例如：万圣节斗篷" required /></label>
+      <label>日期<input id="dateInput" type="date" required /></label>
+      <label>备注<input id="noteInput" type="text" placeholder="例如：拍照超可爱" /></label>
+      <button class="primary full" value="default" type="submit">保存记录</button>
+    </form>
+  </dialog>
+
+  <dialog id="simpleDialog" class="modal">
+    <form method="dialog" id="simpleForm">
+      <div class="modal-head"><div><h2 id="simpleTitle">添加</h2><p id="simpleSubtitle"></p></div><button value="cancel" class="close">×</button></div>
+      <div id="simpleFields"></div>
+      <button class="primary full" value="default" type="submit">保存</button>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
