@@ -79,8 +79,8 @@ function normalizeState(raw){
   return s;
 }
 function load(){
-  try{return normalizeState(JSON.parse(localStorage.getItem(STORAGE_KEY))||emptyState())}
-  catch{return emptyState()}
+  try{return normalizeState(JSON.parse(localStorage.getItem(STORAGE_KEY))||clone(demoState))}
+  catch{return clone(demoState)}
 }
 function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
 function esc(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
