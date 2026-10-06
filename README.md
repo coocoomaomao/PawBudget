@@ -133,3 +133,30 @@ MIT
 ## 🌐 GitHub Pages
 
 本项目是纯静态 Web App，可直接部署到 GitHub Pages。推荐把 Pages source 指向 `xiaohongshu-demo` 分支的根目录，这样公开 Demo 打开就是完整墨团示例；真实用户源码仍保留在 `main`。
+
+
+## 🖥️ Windows 桌面版
+
+PawBudget 同时提供 Windows 桌面安装版。桌面版使用 Electron 封装同一套本地优先应用：
+
+- 双击安装即可使用
+- 创建桌面与开始菜单快捷方式
+- 账本、头像与物品照片仍只保存在用户自己的电脑
+- 不要求登录
+- 卸载应用默认不会主动删除账本数据
+- Windows 安装包通过 GitHub Actions 自动构建
+
+本地开发：
+
+```bash
+npm install
+npm start
+```
+
+构建 Windows 安装包：
+
+```bash
+npm run dist:win
+```
+
+> Early Access 安装包目前未做商业代码签名。部分 Windows 电脑首次运行时可能出现 SmartScreen 提示；正式商业发布建议配置代码签名证书。
