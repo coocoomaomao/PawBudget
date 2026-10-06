@@ -38,6 +38,13 @@ python -m http.server 8000
 http://localhost:8000
 ```
 
+## 🌿 两个版本
+
+- `main`：真实使用版。首次打开为空白账本，适合正式用户。
+- `xiaohongshu-demo`：展示版。首次打开即加载墨团演示数据，适合截图、录屏和 GitHub Pages 展示。
+
+两个版本都可以用右上角 **「演示」** 按钮切换数据状态。
+
 ## 📱 小红书展示模式
 
 右上角点击 **「演示」**，可在：
@@ -102,3 +109,7 @@ MIT
 
 **MeowBuild Lab · 喵造实验室 007**  
 一只猫，认真造点有用的。🐈
+
+## 🌐 GitHub Pages
+
+本项目是纯静态 Web App，可直接部署到 GitHub Pages。推荐把 Pages source 指向 `xiaohongshu-demo` 分支的根目录，这样公开 Demo 打开就是完整墨团示例；真实用户源码仍保留在 `main`。
